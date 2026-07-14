@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   Bell,
   Heart,
@@ -11,9 +14,38 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { categories, cities } from "@/lib/mock-data";
+import { CategoryMegaMenu } from "@/components/layout/category-mega-menu";
+import { cities } from "@/lib/mock-data";
+import { useAccount } from "@/components/providers/account-provider";
+import {
+  readSiteSettings,
+  siteSettingsChangedEvent,
+  type SiteSettings,
+} from "@/lib/site-settings";
 
 export function Header() {
+  const { account, ready } = useAccount();
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => readSiteSettings());
+
+  useEffect(() => {
+    function syncSettings(event?: Event) {
+      setSiteSettings(
+        event instanceof CustomEvent
+          ? (event.detail as SiteSettings)
+          : readSiteSettings(),
+      );
+    }
+    window.addEventListener(siteSettingsChangedEvent, syncSettings);
+    window.addEventListener("storage", syncSettings);
+    return () => {
+      window.removeEventListener(siteSettingsChangedEvent, syncSettings);
+      window.removeEventListener("storage", syncSettings);
+    };
+  }, []);
+
+  const listingHref =
+    account?.accountType === "store" && !account.store ? "/magaza-yarat" : "/elan-yerlesdir";
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
       <div className="container-shell flex h-16 items-center gap-3">
@@ -27,33 +59,27 @@ export function Header() {
           <Menu className="h-5 w-5" />
         </Button>
         <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-lg font-black text-white">
-            a
-          </span>
+          {siteSettings.identity.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={siteSettings.identity.siteName}
+              className="h-10 w-10 rounded-lg object-cover"
+              src={siteSettings.identity.logoUrl}
+            />
+          ) : (
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-lg font-black text-white">
+              a
+            </span>
+          )}
           <span className="hidden text-xl font-black tracking-tight sm:block">
-            alışveriş.az
+            {siteSettings.identity.siteName}
           </span>
         </Link>
         <nav className="hidden items-center gap-1 lg:flex">
+          <CategoryMegaMenu />
           <Button asChild variant="ghost">
-            <Link href="/elanlar">Kateqoriyalar</Link>
+            <Link href="/elanlar?premium=true">Populyar</Link>
           </Button>
-          <div className="group relative">
-            <Button type="button" variant="ghost">
-              Populyar
-            </Button>
-            <div className="invisible absolute left-0 top-full grid w-[620px] grid-cols-2 gap-2 rounded-lg border border-border bg-card p-3 opacity-0 shadow-xl transition group-hover:visible group-hover:opacity-100">
-              {categories.slice(0, 8).map((category) => (
-                <Link
-                  key={category.id}
-                  href={`/elanlar?category=${category.slug}`}
-                  className="rounded-lg px-3 py-2 text-sm hover:bg-primary-soft/50"
-                >
-                  {category.name}
-                </Link>
-              ))}
-            </div>
-          </div>
         </nav>
         <form
           action="/elanlar"
@@ -86,6 +112,7 @@ export function Header() {
             Axtar
           </Button>
         </form>
+        {ready && account ? (
         <div className="ml-auto hidden items-center gap-1 md:flex">
           <Button asChild size="icon" variant="ghost">
             <Link href="/secilmisler" aria-label="Seçilmişlər">
@@ -105,19 +132,33 @@ export function Header() {
               <UserRound className="h-5 w-5" />
             </Link>
           </Button>
-          <Button asChild>
-            <Link href="/elan-yerlesdir">
+          <Button asChild className="!text-white">
+            <Link className="!text-white" href={listingHref}>
               <Plus className="h-4 w-4" />
               Elan yerləşdir
             </Link>
           </Button>
         </div>
-        <Button asChild className="ml-auto md:hidden" size="sm">
-          <Link href="/elan-yerlesdir">
+        ) : ready ? (
+          <div className="ml-auto flex items-center gap-1">
+            <Button asChild size="sm" variant="ghost">
+              <Link href="/giris">Giriş</Link>
+            </Button>
+            <Button asChild className="!text-white" size="sm">
+              <Link className="!text-white" href="/qeydiyyat">Qeydiyyat</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="ml-auto h-9 w-28 animate-pulse rounded-lg bg-background" />
+        )}
+        {ready && account ? (
+        <Button asChild className="ml-auto !text-white md:hidden" size="sm">
+          <Link className="!text-white" href={listingHref}>
             <Plus className="h-4 w-4" />
             Elan
           </Link>
         </Button>
+        ) : null}
       </div>
     </header>
   );

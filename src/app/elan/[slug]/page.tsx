@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/card";
 import { ContactActions, MobileContactBar } from "@/components/listings/contact-actions";
 import { ListingGallery } from "@/components/listings/listing-gallery";
 import { ListingCard } from "@/components/listings/listing-card";
+import { PromotionPanel } from "@/components/listings/promotion-panel";
 import { SiteShell } from "@/components/layout/site-shell";
 import { listings, sellerRatingSummary } from "@/lib/mock-data";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -84,7 +85,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="container-shell py-6">
+      <div className="container-shell pt-6 pb-28 md:py-6">
         <nav className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted">
           <Link href="/">Ana səhifə</Link>
           <ChevronRight className="h-4 w-4" />
@@ -177,7 +178,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
           </section>
 
           <aside className="space-y-4">
-            <Card className="sticky top-24 p-5">
+            <Card className="p-5 lg:sticky lg:top-24">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm text-muted">Satıcı</p>
@@ -230,6 +231,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 </Button>
               </div>
             </Card>
+            <PromotionPanel listingId={listing.id} />
           </aside>
         </div>
       </div>

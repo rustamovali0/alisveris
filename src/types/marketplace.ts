@@ -20,6 +20,13 @@ export type Category = {
   accent: string;
 };
 
+export type CategoryTreeNode = {
+  id: string;
+  name: string;
+  slug: string;
+  children?: CategoryTreeNode[];
+};
+
 export type Listing = {
   id: string;
   slug: string;

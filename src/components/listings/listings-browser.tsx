@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Filter, Grid2X2, List, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ListingCard } from "@/components/listings/listing-card";
-import { categories, cities, listings } from "@/lib/mock-data";
+import { categoryTree, cities, listings } from "@/lib/mock-data";
 import { cn, formatCurrency } from "@/lib/utils";
-import type { Listing } from "@/types/marketplace";
+import type { CategoryTreeNode, Listing } from "@/types/marketplace";
 
 const sortOptions = [
   "Ən yeni",
@@ -36,6 +36,7 @@ type Filters = {
   query: string;
   category: string;
   subcategory: string;
+  childCategory: string;
   city: string;
   minPrice: string;
   maxPrice: string;
@@ -61,6 +62,25 @@ function sortListings(items: Listing[], sort: string) {
   return copy.sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
 }
 
+function findCategoryNode(nodes: CategoryTreeNode[], value: string) {
+  return nodes.find((node) => node.name === value || node.slug === value);
+}
+
+function flattenCategoryTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+  return nodes.flatMap((node) => [node, ...flattenCategoryTree(node.children ?? [])]);
+}
+
+function categoryNameMatches(value: string, listingValue: string) {
+  const normalizedValue = value.toLowerCase();
+  const normalizedListingValue = listingValue.toLowerCase();
+
+  return (
+    normalizedValue === normalizedListingValue ||
+    normalizedValue.includes(normalizedListingValue) ||
+    normalizedListingValue.includes(normalizedValue)
+  );
+}
+
 type FilterPanelProps = {
   filters: Filters;
   setFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void;
@@ -68,12 +88,12 @@ type FilterPanelProps = {
 };
 
 function FilterPanel({ filters, setFilter, toggleFlag }: FilterPanelProps) {
-  const selectedCategory = categories.find(
-    (category) => category.name === filters.category || category.slug === filters.category,
-  );
+  const selectedCategory = findCategoryNode(categoryTree, filters.category);
   const subcategories = selectedCategory
-    ? selectedCategory.subcategories
-    : categories.flatMap((category) => category.subcategories);
+    ? selectedCategory.children ?? []
+    : categoryTree.flatMap((category) => category.children ?? []);
+  const selectedSubcategory = findCategoryNode(subcategories, filters.subcategory);
+  const childCategories = selectedSubcategory?.children ?? [];
 
   return (
     <div className="space-y-5">
@@ -88,10 +108,11 @@ function FilterPanel({ filters, setFilter, toggleFlag }: FilterPanelProps) {
           onChange={(event) => {
             setFilter("category", event.target.value);
             setFilter("subcategory", "");
+            setFilter("childCategory", "");
           }}
         >
           <option value="">Bütün kateqoriyalar</option>
-          {categories.map((category) => (
+          {categoryTree.map((category) => (
             <option key={category.id} value={category.name}>
               {category.name}
             </option>
@@ -106,14 +127,39 @@ function FilterPanel({ filters, setFilter, toggleFlag }: FilterPanelProps) {
           className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
           id="subcategory-filter"
           value={filters.subcategory}
-          onChange={(event) => setFilter("subcategory", event.target.value)}
+          onChange={(event) => {
+            setFilter("subcategory", event.target.value);
+            setFilter("childCategory", "");
+          }}
         >
           <option value="">Hamısı</option>
           {subcategories.map((subcategory) => (
-            <option key={subcategory}>{subcategory}</option>
+            <option key={subcategory.id} value={subcategory.name}>
+              {subcategory.name}
+            </option>
           ))}
         </select>
       </div>
+      {childCategories.length ? (
+        <div>
+          <label className="text-sm font-bold" htmlFor="child-category-filter">
+            Daxili kateqoriya
+          </label>
+          <select
+            className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
+            id="child-category-filter"
+            value={filters.childCategory}
+            onChange={(event) => setFilter("childCategory", event.target.value)}
+          >
+            <option value="">Hamısı</option>
+            {childCategories.map((childCategory) => (
+              <option key={childCategory.id} value={childCategory.name}>
+                {childCategory.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       <div>
         <label className="text-sm font-bold">Qiymət aralığı</label>
         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -184,18 +230,32 @@ function FilterPanel({ filters, setFilter, toggleFlag }: FilterPanelProps) {
 }
 
 export function ListingsBrowser() {
+  const [isHydrated, setIsHydrated] = useState(false);
   const searchParams = useSearchParams();
+  const categoryNodes = useMemo(() => flattenCategoryTree(categoryTree), []);
   const categoryParam = searchParams.get("category") ?? "";
+  const subcategoryParam = searchParams.get("subcategory") ?? "";
+  const childCategoryParam = searchParams.get("child") ?? "";
   const initialCategory =
-    categories.find((category) => category.slug === categoryParam || category.name === categoryParam)
+    findCategoryNode(categoryTree, categoryParam)?.name ?? "";
+  const initialSubcategory =
+    categoryNodes.find((category) => category.slug === subcategoryParam || category.name === subcategoryParam)
+      ?.name ?? "";
+  const initialChildCategory =
+    categoryNodes.find((category) => category.slug === childCategoryParam || category.name === childCategoryParam)
       ?.name ?? "";
   const [view, setView] = useState<"grid" | "list">("grid");
   const [sort, setSort] = useState(sortOptions[0]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
   const [filters, setFilters] = useState<Filters>(() => ({
     query: searchParams.get("q") ?? "",
     category: initialCategory,
-    subcategory: "",
+    subcategory: initialSubcategory,
+    childCategory: initialChildCategory,
     city: searchParams.get("city") ?? "",
     minPrice: "",
     maxPrice: "",
@@ -235,10 +295,24 @@ export function ListingsBrowser() {
       return;
     }
 
+    if (label === filters.category) {
+      setFilters((current) => ({
+        ...current,
+        category: "",
+        subcategory: "",
+        childCategory: "",
+      }));
+      return;
+    }
+
+    if (label === filters.subcategory) {
+      setFilters((current) => ({ ...current, subcategory: "", childCategory: "" }));
+      return;
+    }
+
     const map: Partial<Record<keyof Filters, string>> = {
       query: filters.query,
-      category: filters.category,
-      subcategory: filters.subcategory,
+      childCategory: filters.childCategory,
       city: filters.city,
       minPrice: filters.minPrice,
       maxPrice: filters.maxPrice,
@@ -256,12 +330,15 @@ export function ListingsBrowser() {
       query: "",
       category: "",
       subcategory: "",
+      childCategory: "",
       city: "",
       minPrice: "",
       maxPrice: "",
       dateRange: "",
       flags: { ...defaultFlags },
     });
+    setSort(sortOptions[0]);
+    window.history.replaceState(null, "", "/elanlar");
   }
 
   const filteredListings = useMemo(() => {
@@ -269,6 +346,10 @@ export function ListingsBrowser() {
     const max = Number(filters.maxPrice) || Number.POSITIVE_INFINITY;
     const query = filters.query.trim().toLowerCase();
     const now = new Date("2026-07-14T00:00:00");
+    const selectedSubcategory = categoryNodes.find(
+      (category) => category.name === filters.subcategory,
+    );
+    const descendantSubcategories = selectedSubcategory?.children ?? [];
 
     const result = listings.filter((listing) => {
       const haystack = [
@@ -286,7 +367,21 @@ export function ListingsBrowser() {
 
       if (query && !haystack.includes(query)) return false;
       if (filters.category && listing.category !== filters.category) return false;
-      if (filters.subcategory && listing.subcategory !== filters.subcategory) return false;
+      if (
+        filters.subcategory &&
+        listing.subcategory !== filters.subcategory &&
+        !descendantSubcategories.some((category) =>
+          categoryNameMatches(category.name, listing.subcategory),
+        )
+      ) {
+        return false;
+      }
+      if (
+        filters.childCategory &&
+        !categoryNameMatches(filters.childCategory, listing.subcategory)
+      ) {
+        return false;
+      }
       if (filters.city && listing.city !== filters.city) return false;
       if (listing.price < min || listing.price > max) return false;
       if (filters.flags.newOnly && listing.condition !== "new") return false;
@@ -309,12 +404,13 @@ export function ListingsBrowser() {
     });
 
     return sortListings(result, sort);
-  }, [filters, sort]);
+  }, [categoryNodes, filters, sort]);
 
   const activeFilters = [
     filters.query,
     filters.category,
     filters.subcategory,
+    filters.childCategory,
     filters.city,
     filters.minPrice ? `min ${filters.minPrice}` : "",
     filters.maxPrice ? `max ${filters.maxPrice}` : "",
@@ -355,8 +451,7 @@ export function ListingsBrowser() {
             ))}
           </select>
           <Button type="button" onClick={() => setMobileFiltersOpen(true)}>
-            <SlidersHorizontal className="h-4 w-4" />
-            Filterləri aç
+            Axtar
           </Button>
         </div>
       </div>
@@ -375,7 +470,12 @@ export function ListingsBrowser() {
                 <X className="h-3.5 w-3.5" />
               </button>
             ))}
-            <button className="text-sm font-semibold text-primary" type="button" onClick={clearAll}>
+            <button
+              className="text-sm font-semibold text-primary"
+              data-testid="clear-all-filters"
+              type="button"
+              onClick={clearAll}
+            >
               Hamısını sil
             </button>
           </>
@@ -401,6 +501,8 @@ export function ListingsBrowser() {
             <div className="flex items-center gap-2">
               <Button
                 className="lg:hidden"
+                data-testid="open-mobile-filters"
+                disabled={!isHydrated}
                 type="button"
                 variant="secondary"
                 onClick={() => setMobileFiltersOpen(true)}
@@ -492,16 +594,14 @@ export function ListingsBrowser() {
             </Card>
           )}
 
-          <div className="mt-8 flex justify-center">
-            <Button disabled={filteredListings.length <= 8} type="button" variant="secondary">
-              {filteredListings.length <= 8 ? "Bütün elanlar göstərildi" : "Növbəti səhifə"}
-            </Button>
-          </div>
         </section>
       </div>
 
       {mobileFiltersOpen ? (
-        <div className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden">
+        <div
+          className="fixed inset-0 z-50 bg-slate-950/40 lg:hidden"
+          data-testid="mobile-filter-drawer"
+        >
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-lg bg-card p-4">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2 text-lg font-black">

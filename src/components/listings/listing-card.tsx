@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, ShieldCheck, Truck } from "lucide-react";
+import { Crown, Gem, MapPin, ShieldCheck, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { FavoriteButton } from "@/components/listings/favorite-button";
@@ -25,8 +25,18 @@ export function ListingCard({ listing, compact = false }: ListingCardProps) {
             className="object-cover transition duration-500 group-hover:scale-105"
           />
           <div className="absolute left-2 top-2 flex gap-1.5">
-            {listing.isPremium ? <Badge tone="amber">Premium</Badge> : null}
-            {listing.isVip ? <Badge tone="purple">VIP</Badge> : null}
+            {listing.isPremium ? (
+              <Badge tone="amber">
+                <Gem className="h-3.5 w-3.5" />
+                Premium
+              </Badge>
+            ) : null}
+            {listing.isVip ? (
+              <Badge tone="purple">
+                <Crown className="h-3.5 w-3.5" />
+                VIP
+              </Badge>
+            ) : null}
           </div>
           <FavoriteButton
             listingId={listing.id}

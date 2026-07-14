@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { AdminDashboard } from "@/components/admin/admin-dashboard";
+import { AdminAccess } from "@/components/admin/admin-access";
 
 export const metadata: Metadata = {
   title: "Admin panel",
 };
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  return <AdminAccess />;
 }

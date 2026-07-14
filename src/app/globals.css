@@ -14,6 +14,132 @@
   --warning: #f59e0b;
 }
 
+[data-site-theme="emerald"] {
+  --background: #f7fee7;
+  --foreground: #102a1d;
+  --card: #ffffff;
+  --muted: #476354;
+  --border: #bbf7d0;
+  --primary: #059669;
+  --primary-dark: #065f46;
+  --primary-soft: #d1fae5;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+}
+
+[data-site-theme="ocean"] {
+  --background: #f0f9ff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --muted: #475569;
+  --border: #bae6fd;
+  --primary: #0ea5e9;
+  --primary-dark: #075985;
+  --primary-soft: #e0f2fe;
+  --success: #059669;
+  --danger: #e11d48;
+  --warning: #f97316;
+}
+
+[data-site-theme="sunset"] {
+  --background: #fff7ed;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --muted: #6b4f3b;
+  --border: #fed7aa;
+  --primary: #ea580c;
+  --primary-dark: #9a3412;
+  --primary-soft: #ffedd5;
+  --success: #15803d;
+  --danger: #b91c1c;
+  --warning: #f59e0b;
+}
+
+[data-site-theme="rose"] {
+  --background: #fff1f2;
+  --foreground: #111827;
+  --card: #ffffff;
+  --muted: #704251;
+  --border: #fecdd3;
+  --primary: #e11d48;
+  --primary-dark: #9f1239;
+  --primary-soft: #ffe4e6;
+  --success: #16a34a;
+  --danger: #be123c;
+  --warning: #f59e0b;
+}
+
+[data-site-theme="graphite"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --muted: #475569;
+  --border: #cbd5e1;
+  --primary: #334155;
+  --primary-dark: #0f172a;
+  --primary-soft: #e2e8f0;
+  --success: #15803d;
+  --danger: #dc2626;
+  --warning: #ca8a04;
+}
+
+[data-site-theme="citrus"] {
+  --background: #fefce8;
+  --foreground: #1f2937;
+  --card: #ffffff;
+  --muted: #5c5a2d;
+  --border: #d9f99d;
+  --primary: #65a30d;
+  --primary-dark: #3f6212;
+  --primary-soft: #ecfccb;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #eab308;
+}
+
+[data-site-theme="midnight"] {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #111827;
+  --muted: #cbd5e1;
+  --border: #243145;
+  --primary: #7c3aed;
+  --primary-dark: #a78bfa;
+  --primary-soft: #1e1b4b;
+  --success: #22c55e;
+  --danger: #f87171;
+  --warning: #fbbf24;
+}
+
+[data-site-theme="sky"] {
+  --background: #f0f9ff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --muted: #4b647d;
+  --border: #bfdbfe;
+  --primary: #2563eb;
+  --primary-dark: #1e3a8a;
+  --primary-soft: #dbeafe;
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #f59e0b;
+}
+
+[data-site-theme="mono"] {
+  --background: #ffffff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --muted: #4b5563;
+  --border: #d1d5db;
+  --primary: #111827;
+  --primary-dark: #030712;
+  --primary-soft: #f3f4f6;
+  --success: #047857;
+  --danger: #b91c1c;
+  --warning: #b45309;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -48,6 +174,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+main > .container-shell {
+  animation: page-enter 360ms ease both;
 }
 
 a {
@@ -90,6 +220,80 @@ textarea {
 
 .soft-shadow {
   box-shadow: 0 18px 45px rgb(15 23 42 / 0.08);
+}
+
+.animate-scale-in {
+  animation: scale-in 160ms ease both;
+  transform-origin: top center;
+}
+
+.animate-slide-up {
+  animation: slide-up 240ms ease both;
+}
+
+.animate-fade-in {
+  animation: fade-in 260ms ease both;
+}
+
+.hover-lift {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 .scrollbar-hide {
