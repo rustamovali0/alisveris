@@ -44,7 +44,7 @@ export function Footer() {
   const footer = settings.footer;
 
   return (
-    <footer className="border-t border-border bg-card pb-20 md:pb-0">
+    <footer className="site-footer border-t border-border bg-card pb-20 md:pb-0">
       <div className="container-shell grid gap-8 py-10 lg:grid-cols-[1.2fr_2fr_1fr]">
         <div>
           <Link href="/" className="text-2xl font-black">
