@@ -248,12 +248,12 @@ textarea {
 
 @media (min-width: 1280px) and (max-width: 1535px) {
   html:has([data-ad-rails="active"]) main {
-    width: calc(100% - 560px);
+    width: calc(100% - 420px);
     margin-inline: auto;
   }
 
   html:has([data-ad-rails="active"]) .container-shell {
-    width: min(880px, calc(100% - 32px));
+    width: min(1080px, calc(100% - 40px));
   }
 
   .ad-side-rail {
