@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { categories } from "@/lib/mock-data";
+import { categories, cities } from "@/lib/mock-data";
 
 export function Header() {
   return (
@@ -55,18 +55,35 @@ export function Header() {
             </div>
           </div>
         </nav>
-        <form className="hidden flex-1 items-center gap-2 md:flex">
+        <form
+          action="/elanlar"
+          className="hidden flex-1 items-center gap-2 md:flex"
+          method="get"
+        >
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input
               className="pl-9"
+              name="q"
               placeholder="Məhsul, marka və ya kateqoriya axtar"
               type="search"
             />
           </div>
-          <Button type="button" variant="secondary">
-            <MapPin className="h-4 w-4" />
-            Bakı
+          <label className="relative">
+            <span className="sr-only">Şəhər</span>
+            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <select
+              className="h-11 rounded-lg border border-border bg-card px-10 text-sm font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+              name="city"
+              defaultValue="Bakı"
+            >
+              {cities.map((city) => (
+                <option key={city}>{city}</option>
+              ))}
+            </select>
+          </label>
+          <Button className="sr-only" type="submit">
+            Axtar
           </Button>
         </form>
         <div className="ml-auto hidden items-center gap-1 md:flex">

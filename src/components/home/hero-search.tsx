@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MapPin, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { popularSearches } from "@/lib/mock-data";
+import { cities, popularSearches } from "@/lib/mock-data";
 
 export function HeroSearch() {
   return (
@@ -21,24 +21,36 @@ export function HeroSearch() {
             Minlərlə elan arasından ehtiyacın olan məhsulu tap və ya öz elanını
             bir neçə dəqiqəyə yerləşdir.
           </p>
-          <form className="mt-7 rounded-lg border border-border bg-background p-2 soft-shadow">
+          <form
+            action="/elanlar"
+            className="mt-7 rounded-lg border border-border bg-background p-2 soft-shadow"
+            method="get"
+          >
             <div className="grid gap-2 md:grid-cols-[1fr_180px_auto]">
               <label className="relative">
                 <span className="sr-only">Axtarış</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <Input
                   className="border-transparent bg-card pl-9"
+                  name="q"
                   placeholder="Məhsul, marka və kateqoriya"
                   type="search"
                 />
               </label>
-              <Button type="button" variant="secondary">
-                <MapPin className="h-4 w-4" />
-                Bakı
-              </Button>
-              <Button asChild>
-                <Link href="/elanlar">Axtar</Link>
-              </Button>
+              <label className="relative">
+                <span className="sr-only">Şəhər</span>
+                <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                <select
+                  className="h-11 w-full rounded-lg border border-border bg-card px-10 text-sm font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
+                  name="city"
+                  defaultValue="Bakı"
+                >
+                  {cities.map((city) => (
+                    <option key={city}>{city}</option>
+                  ))}
+                </select>
+              </label>
+              <Button type="submit">Axtar</Button>
             </div>
           </form>
           <div className="mt-5 flex flex-wrap gap-2">

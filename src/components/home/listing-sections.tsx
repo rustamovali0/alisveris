@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,13 +70,13 @@ export function StoreShowcase() {
         {stores.map((store) => (
           <Card className="p-4" key={store.id}>
             <div className="flex items-center gap-3">
-              <Image
-                src={store.logo}
-                alt={store.name}
-                width={48}
-                height={48}
-                className="rounded-lg border border-border bg-background"
-              />
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-border bg-primary-soft text-sm font-black text-primary-dark">
+                {store.name
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)}
+              </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold">{store.name}</h3>

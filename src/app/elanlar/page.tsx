@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SiteShell } from "@/components/layout/site-shell";
 import { ListingsBrowser } from "@/components/listings/listings-browser";
 
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function ListingsPage() {
   return (
     <SiteShell>
-      <ListingsBrowser />
+      <Suspense fallback={<div className="container-shell py-8">Elanlar yüklənir...</div>}>
+        <ListingsBrowser />
+      </Suspense>
     </SiteShell>
   );
 }

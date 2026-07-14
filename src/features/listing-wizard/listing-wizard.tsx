@@ -54,6 +54,7 @@ const defaultValues: ListingDraftInput = {
 
 export function ListingWizard() {
   const [step, setStep] = useState(0);
+  const [published, setPublished] = useState(false);
   const form = useForm<ListingDraftInput>({
     resolver: zodResolver(listingDraftSchema),
     defaultValues,
@@ -84,11 +85,13 @@ export function ListingWizard() {
   async function submit(values: ListingDraftInput) {
     const parsed = listingDraftSchema.safeParse(values);
     if (!parsed.success) {
+      setPublished(false);
       return;
     }
 
     console.info("listing_publish_requested", parsed.data);
     window.localStorage.removeItem("alisveris-listing-draft");
+    setPublished(true);
   }
 
   return (
@@ -320,6 +323,12 @@ export function ListingWizard() {
         {Object.values(form.formState.errors).length ? (
           <div className="mt-5 rounded-lg border border-danger/30 bg-red-50 p-3 text-sm text-danger">
             Formda düzəldilməli sahələr var. Zəhmət olmasa məlumatları yoxlayın.
+          </div>
+        ) : null}
+        {published ? (
+          <div className="mt-5 rounded-lg border border-success/30 bg-green-50 p-3 text-sm font-semibold text-success">
+            Elan demo rejimdə dərc olundu. Real Supabase qoşulanda bu addım
+            server action-a göndəriləcək.
           </div>
         ) : null}
 

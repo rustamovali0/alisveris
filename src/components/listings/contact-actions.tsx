@@ -20,6 +20,7 @@ export function ContactActions({
   listingId,
 }: ContactActionsProps) {
   const [visible, setVisible] = useState(false);
+  const [notice, setNotice] = useState("");
 
   function revealPhone() {
     setVisible(true);
@@ -43,10 +44,23 @@ export function ContactActions({
           </a>
         </Button>
       </div>
-      <Button type="button" variant="ghost">
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={async () => {
+          const url = window.location.href;
+          if (navigator.share) {
+            await navigator.share({ title: document.title, url });
+          } else {
+            await navigator.clipboard.writeText(url);
+            setNotice("Link kopyalandı");
+          }
+        }}
+      >
         <Share2 className="h-4 w-4" />
         Paylaş
       </Button>
+      {notice ? <p className="text-center text-sm font-semibold text-success">{notice}</p> : null}
     </div>
   );
 }

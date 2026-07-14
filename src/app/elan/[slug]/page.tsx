@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -18,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContactActions, MobileContactBar } from "@/components/listings/contact-actions";
+import { ListingGallery } from "@/components/listings/listing-gallery";
 import { ListingCard } from "@/components/listings/listing-card";
 import { SiteShell } from "@/components/layout/site-shell";
 import { listings, sellerRatingSummary } from "@/lib/mock-data";
@@ -95,41 +95,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <section className="space-y-5">
-            <Card className="overflow-hidden">
-              <div className="relative aspect-[16/10] bg-slate-100">
-                <Image
-                  src={listing.images[0] ?? listing.image}
-                  alt={listing.title}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 760px"
-                  className="object-cover"
-                  priority
-                />
-                <Button
-                  className="absolute right-3 top-3 bg-white/90 text-slate-700"
-                  type="button"
-                  variant="secondary"
-                >
-                  Fullscreen
-                </Button>
-              </div>
-              <div className="grid grid-cols-4 gap-2 p-3">
-                {listing.images.map((image) => (
-                  <div
-                    className="relative aspect-[4/3] overflow-hidden rounded-lg bg-slate-100"
-                    key={image}
-                  >
-                    <Image
-                      src={image}
-                      alt={listing.title}
-                      fill
-                      sizes="180px"
-                      className="object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </Card>
+            <ListingGallery images={listing.images} title={listing.title} />
 
             <Card className="p-5">
               <div className="mb-4 flex flex-wrap gap-2">
