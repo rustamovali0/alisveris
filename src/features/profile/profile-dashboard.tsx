@@ -37,39 +37,64 @@ export function ProfileDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!account) { setItems([]); setBalance(0); setMessageCount(0); setLoading(false); return; }
+    const accountId = account?.id;
+
+    if (!accountId) {
+      setItems([]);
+      setBalance(0);
+      setMessageCount(0);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
-    async function load() {
+
+    async function load(userId: string) {
       setLoading(true);
+
       if (isSupabaseConfigured) {
         const supabase = createSupabaseBrowserClient();
         const [listingResult, walletResult, messageResult] = await Promise.all([
-          supabase.from("listings").select("*").eq("owner_id", account.id).order("created_at", { ascending: false }),
-          supabase.from("wallets").select("balance").eq("user_id", account.id).maybeSingle(),
-          supabase.from("messages").select("id", { count: "exact", head: true }).eq("receiver_id", account.id),
+          supabase.from("listings").select("*").eq("owner_id", userId).order("created_at", { ascending: false }),
+          supabase.from("wallets").select("balance").eq("user_id", userId).maybeSingle(),
+          supabase.from("messages").select("id", { count: "exact", head: true }).eq("receiver_id", userId),
         ]);
+
         if (!cancelled && !listingResult.error) setItems((listingResult.data ?? []) as ProfileListing[]);
         if (!cancelled && !walletResult.error) setBalance(Number(walletResult.data?.balance ?? 0));
         if (!cancelled && !messageResult.error) setMessageCount(messageResult.count ?? 0);
       } else {
-        const listingKey = `alisveris-user-listings-v1:${account.id}`;
-        const balanceKey = `alisveris-user-balance-v1:${account.id}`;
-        const messageKey = `alisveris-user-messages-v1:${account.id}`;
+        const listingKey = `alisveris-user-listings-v1:${userId}`;
+        const balanceKey = `alisveris-user-balance-v1:${userId}`;
+        const messageKey = `alisveris-user-messages-v1:${userId}`;
+
         try {
           const localItems = JSON.parse(localStorage.getItem(listingKey) ?? "[]");
           const localMessages = JSON.parse(localStorage.getItem(messageKey) ?? "[]");
+
           if (!cancelled) {
             setItems(Array.isArray(localItems) ? localItems : []);
             setBalance(Number(localStorage.getItem(balanceKey) ?? 0));
             setMessageCount(Array.isArray(localMessages) ? localMessages.length : 0);
           }
-        } catch { if (!cancelled) { setItems([]); setBalance(0); setMessageCount(0); } }
+        } catch {
+          if (!cancelled) {
+            setItems([]);
+            setBalance(0);
+            setMessageCount(0);
+          }
+        }
       }
+
       if (!cancelled) setLoading(false);
     }
-    void load();
-    return () => { cancelled = true; };
-  }, [account]);
+
+    void load(accountId);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [account?.id]);
 
   const activeItems = useMemo(() => items.filter((item) => (item.status ?? "Aktiv") === "Aktiv"), [items]);
   const phoneClicks = useMemo(() => items.reduce((sum, item) => sum + Math.max(0, Math.round((item.views ?? 0) / 9)), 0), [items]);
@@ -92,15 +117,27 @@ export function ProfileDashboard() {
     if (!(await confirm("Elanı silmək istəyirsiniz?", `“${listing.title}” elanı silinəcək.`))) return;
     const next = items.filter((item) => item.id !== listing.id);
     setItems(next);
-    if (account) localStorage.setItem(`alisveris-user-listings-v1:${account.id}`, JSON.stringify(next));
-    if (isSupabaseConfigured) await createSupabaseBrowserClient().from("listings").delete().eq("id", listing.id).eq("owner_id", account?.id);
+
+    const accountId = account?.id;
+    if (!accountId) return;
+
+    localStorage.setItem(`alisveris-user-listings-v1:${accountId}`, JSON.stringify(next));
+    if (isSupabaseConfigured) {
+      await createSupabaseBrowserClient().from("listings").delete().eq("id", listing.id).eq("owner_id", accountId);
+    }
   }
 
   async function togglePremium(listing: ProfileListing) {
     const next = items.map((item) => item.id === listing.id ? { ...item, isPremium: !item.isPremium } : item);
     setItems(next);
-    if (account) localStorage.setItem(`alisveris-user-listings-v1:${account.id}`, JSON.stringify(next));
-    if (isSupabaseConfigured) await createSupabaseBrowserClient().from("listings").update({ is_premium: !listing.isPremium }).eq("id", listing.id).eq("owner_id", account?.id);
+
+    const accountId = account?.id;
+    if (!accountId) return;
+
+    localStorage.setItem(`alisveris-user-listings-v1:${accountId}`, JSON.stringify(next));
+    if (isSupabaseConfigured) {
+      await createSupabaseBrowserClient().from("listings").update({ is_premium: !listing.isPremium }).eq("id", listing.id).eq("owner_id", accountId);
+    }
   }
 
   function content() {
