@@ -43,7 +43,7 @@ function DesktopBanner({
     >
       <Link
         aria-label={`${banner.brand}: ${banner.title}`}
-        className="pointer-events-auto block h-full overflow-hidden border-x border-border bg-black shadow-xl animate-fade-in"
+        className="pointer-events-auto block h-full overflow-hidden border-x border-border bg-card shadow-xl animate-fade-in"
         href={banner.href}
         rel="sponsored noopener noreferrer"
         target="_blank"
@@ -52,7 +52,7 @@ function DesktopBanner({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             alt={`${banner.brand} reklam banneri`}
-            className="h-full w-full object-contain object-top transition duration-300 hover:scale-[1.01]"
+            className="h-full w-full object-cover object-top transition duration-300 hover:scale-[1.01]"
             src={banner.imageUrl}
           />
         ) : (
