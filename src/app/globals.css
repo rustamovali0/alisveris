@@ -226,7 +226,7 @@ textarea {
 }
 
 .ad-side-rail {
-  width: 112px;
+  width: 104px;
 }
 
 @media (min-width: 960px) {
@@ -243,11 +243,11 @@ textarea {
 
 @media (min-width: 1280px) and (max-width: 1535px) {
   html:has([data-ad-rails="active"]) .container-shell {
-    width: min(1180px, calc(100% - 332px));
+    width: min(1180px, calc(100% - 280px));
   }
 
   .ad-side-rail {
-    width: 150px;
+    width: 128px;
   }
 }
 
