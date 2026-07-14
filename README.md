@@ -28,6 +28,12 @@ npm run dev
 
 Sayt: [http://localhost:3000](http://localhost:3000)
 
+Supabase girişləri üçün `.env.local` faylında `NEXT_PUBLIC_SUPABASE_URL` və
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` dəyişənlərini doldurun. Köhnə Supabase
+layihələrində publishable key əvəzinə `NEXT_PUBLIC_SUPABASE_ANON_KEY` istifadə
+oluna bilər. `SUPABASE_SERVICE_ROLE_KEY` və `sb_secret_...` açarlarını heç vaxt
+`NEXT_PUBLIC_` prefiksi ilə client-ə ötürməyin.
+
 ## Yoxlama
 
 ```bash

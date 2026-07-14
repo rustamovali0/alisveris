@@ -29,7 +29,7 @@ export default function HomePage() {
       <MotionSection>
         <StoreShowcase />
       </MotionSection>
-      <section className="container-shell py-12">
+      <section className="container-shell hidden py-12 md:block">
         <div className="rounded-lg border border-border bg-card p-6 soft-shadow">
           <h2 className="text-2xl font-black">
             Azərbaycanda təhlükəsiz alış-veriş və elan yerləşdirmə

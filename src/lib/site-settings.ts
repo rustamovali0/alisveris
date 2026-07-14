@@ -33,6 +33,8 @@ export type FooterSettings = {
 
 export type AdBannerSettings = {
   enabled: boolean;
+  imageUrl: string;
+  mobileImageUrl: string;
   brand: string;
   title: string;
   subtitle: string;
@@ -44,6 +46,7 @@ export type SiteSettings = {
   theme: SiteThemeId;
   identity: {
     siteName: string;
+    showSiteName: boolean;
     browserTitle: string;
     logoUrl: string;
     faviconUrl: string;
@@ -142,6 +145,7 @@ export const defaultSiteSettings: SiteSettings = {
   theme: "default",
   identity: {
     siteName: "alışveriş.az",
+    showSiteName: true,
     browserTitle: "alışveriş.az - Al, sat və axtardığını tap",
     logoUrl: "",
     faviconUrl: "",
@@ -150,6 +154,8 @@ export const defaultSiteSettings: SiteSettings = {
   ads: {
     left: {
       enabled: true,
+      imageUrl: "/ads/kemer-store-vertical.png",
+      mobileImageUrl: "/ads/kemer-store-mobile.png",
       brand: "kemer.store",
       title: "Kəmərlər və aksesuarlar",
       subtitle: "Premium dəri modellər, gündəlik çatdırılma.",
@@ -158,6 +164,8 @@ export const defaultSiteSettings: SiteSettings = {
     },
     right: {
       enabled: true,
+      imageUrl: "/ads/kemer-store-vertical.png",
+      mobileImageUrl: "/ads/kemer-store-mobile.png",
       brand: "kemer.store",
       title: "Yeni kolleksiya",
       subtitle: "Klassik və casual kəmərlər bir vitrində.",

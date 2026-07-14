@@ -8,7 +8,22 @@ import { cities, popularSearches } from "@/lib/mock-data";
 export function HeroSearch() {
   return (
     <section className="overflow-hidden bg-card">
-      <div className="container-shell grid min-h-[520px] items-center gap-10 py-10 lg:grid-cols-[1.1fr_0.9fr]">
+      <form action="/elanlar" className="container-shell py-3 md:hidden" method="get">
+        <label className="relative block">
+          <span className="sr-only">Axtarış</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Input
+            className="h-10 bg-background pl-9 pr-16 text-sm"
+            name="q"
+            placeholder="Əşya və ya xidmət axtarışı"
+            type="search"
+          />
+          <button className="absolute right-1 top-1/2 h-8 -translate-y-1/2 rounded-md bg-primary px-3 text-xs font-bold text-white" type="submit">
+            Axtar
+          </button>
+        </label>
+      </form>
+      <div className="container-shell hidden min-h-[520px] items-center gap-10 py-10 md:grid lg:grid-cols-[1.1fr_0.9fr]">
         <div className="max-w-2xl">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm font-semibold text-primary-dark dark:text-purple-100">
             <Sparkles className="h-4 w-4 text-warning" />

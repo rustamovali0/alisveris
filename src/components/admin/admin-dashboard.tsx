@@ -150,7 +150,10 @@ export function AdminDashboard() {
     setNotice("İstifadəçi hesab tipi admin tərəfindən dəyişdirildi");
   }
 
-  function updateIdentity(key: keyof SiteSettings["identity"], value: string) {
+  function updateIdentity<K extends keyof SiteSettings["identity"]>(
+    key: K,
+    value: SiteSettings["identity"][K],
+  ) {
     setSiteSettings((current) => ({
       ...current,
       identity: { ...current.identity, [key]: value },
@@ -491,6 +494,39 @@ export function AdminDashboard() {
                     </label>
                   ))}
                 </div>
+                <div className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-white/10 bg-slate-950 p-3">
+                  <div>
+                    <p className="text-sm font-bold">Sayt adını headerdə göstər</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Söndürüləndə mobil və desktop headerdə yalnız loqo görünür.
+                    </p>
+                  </div>
+                  <button
+                    aria-checked={siteSettings.identity.showSiteName}
+                    aria-label="Sayt adını headerdə göstər"
+                    className={`relative h-7 w-12 shrink-0 rounded-full border transition-colors ${
+                      siteSettings.identity.showSiteName
+                        ? "border-primary bg-primary"
+                        : "border-slate-600 bg-slate-700"
+                    }`}
+                    onClick={() =>
+                      updateIdentity(
+                        "showSiteName",
+                        !siteSettings.identity.showSiteName,
+                      )
+                    }
+                    role="switch"
+                    type="button"
+                  >
+                    <span
+                      className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                        siteSettings.identity.showSiteName
+                          ? "translate-x-5"
+                          : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
                 <Button className="mt-4" type="button" onClick={persistSiteSettings}>
                   Brend ayarlarını saxla
                 </Button>
@@ -634,6 +670,8 @@ export function AdminDashboard() {
                         </label>
                         <div className="grid gap-3">
                           {([
+                            ["imageUrl", "Banner şəkli URL"],
+                            ["mobileImageUrl", "Mobil banner şəkli URL"],
                             ["brand", "Brand"],
                             ["title", "Başlıq"],
                             ["subtitle", "Alt mətn"],

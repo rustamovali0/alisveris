@@ -47,14 +47,14 @@ const tabs = ["Aktiv", "Gözləmədə", "Rədd edilmiş", "Vaxtı bitmiş", "Sat
 export default function ProfilePage() {
   return (
     <SiteShell>
-      <div className="container-shell py-8">
+      <div className="container-shell min-w-0 py-6 md:py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-black">İstifadəçi kabineti</h1>
           <p className="mt-2 text-muted">
             Elanlar, mesajlar, mağaza, balans və təhlükəsizlik idarəetməsi.
           </p>
         </div>
-        <div className="grid gap-5 lg:grid-cols-[270px_1fr]">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[270px_minmax(0,1fr)]">
           <Card className="hidden h-fit p-3 lg:block">
             {menu.map(([label, Icon], index) => (
               <button
@@ -69,8 +69,8 @@ export default function ProfilePage() {
               </button>
             ))}
           </Card>
-          <section className="space-y-5">
-            <div className="scrollbar-hide flex gap-2 overflow-x-auto lg:hidden">
+          <section className="min-w-0 space-y-5">
+            <div className="scrollbar-hide flex max-w-full min-w-0 gap-2 overflow-x-auto pb-1 lg:hidden">
               {menu.slice(0, 8).map(([label]) => (
                 <button
                   className="shrink-0 rounded-full border border-border bg-card px-3 py-2 text-sm"
@@ -94,7 +94,7 @@ export default function ProfilePage() {
                 </Card>
               ))}
             </div>
-            <Card className="p-5">
+            <Card className="min-w-0 p-4 md:p-5">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-black">Elanlarım</h2>
                 <Button>Yeni elan</Button>
@@ -117,7 +117,7 @@ export default function ProfilePage() {
               <div className="space-y-3">
                 {listings.slice(0, 4).map((listing) => (
                   <div
-                    className="grid gap-3 rounded-lg border border-border p-3 md:grid-cols-[1fr_auto]"
+                    className="grid min-w-0 gap-3 rounded-lg border border-border p-3 md:grid-cols-[minmax(0,1fr)_auto]"
                     key={listing.id}
                   >
                     <div>
@@ -132,7 +132,7 @@ export default function ProfilePage() {
                         {listing.favorites} seçilmiş
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex min-w-0 flex-wrap gap-2">
                       {["Redaktə et", "Statistika", "Premium et", "Sil"].map((action) => (
                         <Button
                           key={action}

@@ -4,8 +4,29 @@ import { cn } from "@/lib/utils";
 
 export function CategoryGrid() {
   return (
-    <section className="container-shell py-10">
-      <div className="mb-5 flex items-end justify-between gap-4">
+    <section className="container-shell py-3 md:py-10">
+      <div className="scrollbar-hide flex gap-3 overflow-x-auto pb-2 md:hidden">
+        <Link
+          className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center text-[10px] font-semibold"
+          href="/elanlar"
+        >
+          <span className="grid h-12 w-12 place-items-center rounded-lg bg-primary-soft text-xl font-black text-primary">+</span>
+          Kataloq
+        </Link>
+        {categories.map((category) => (
+          <Link
+            className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center text-[10px] font-semibold leading-3"
+            href={`/elanlar?category=${category.slug}`}
+            key={category.id}
+          >
+            <span className={cn("grid h-12 w-12 place-items-center rounded-lg", category.accent)}>
+              <category.icon className="h-5 w-5" />
+            </span>
+            <span className="line-clamp-2">{category.name}</span>
+          </Link>
+        ))}
+      </div>
+      <div className="mb-5 hidden items-end justify-between gap-4 md:flex">
         <div>
           <h2 className="text-2xl font-black">Kateqoriyalar</h2>
           <p className="mt-1 text-sm text-muted">
@@ -16,7 +37,7 @@ export function CategoryGrid() {
           Hamısına bax
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
+      <div className="hidden grid-cols-2 gap-3 sm:grid-cols-3 md:grid lg:grid-cols-7">
         {categories.map((category) => (
           <Link
             href={`/elanlar?category=${category.slug}`}

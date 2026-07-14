@@ -6,7 +6,6 @@ import {
   Bell,
   Heart,
   MapPin,
-  Menu,
   MessageCircle,
   Plus,
   Search,
@@ -49,31 +48,24 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
       <div className="container-shell flex h-16 items-center gap-3">
-        <Button
-          aria-label="Menyu"
-          className="md:hidden"
-          size="icon"
-          type="button"
-          variant="ghost"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        <Link href="/" className="flex shrink-0 items-center gap-2">
+        <Link href="/" className="flex min-w-0 shrink items-center gap-2 md:shrink-0">
           {siteSettings.identity.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               alt={siteSettings.identity.siteName}
-              className="h-10 w-10 rounded-lg object-cover"
+              className="h-9 w-9 shrink-0 rounded-lg object-cover md:h-10 md:w-10"
               src={siteSettings.identity.logoUrl}
             />
           ) : (
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-lg font-black text-white">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-lg font-black text-white md:h-10 md:w-10">
               a
             </span>
           )}
-          <span className="hidden text-xl font-black tracking-tight sm:block">
-            {siteSettings.identity.siteName}
-          </span>
+          {siteSettings.identity.showSiteName ? (
+            <span className="max-w-[118px] truncate text-base font-black tracking-tight sm:max-w-none sm:text-xl">
+              {siteSettings.identity.siteName}
+            </span>
+          ) : null}
         </Link>
         <nav className="hidden items-center gap-1 lg:flex">
           <CategoryMegaMenu />
