@@ -236,14 +236,24 @@ textarea {
 }
 
 @media (min-width: 960px) and (max-width: 1279px) {
+  html:has([data-ad-rails="active"]) main {
+    width: calc(100% - 268px);
+    margin-inline: auto;
+  }
+
   html:has([data-ad-rails="active"]) .container-shell {
-    width: min(1180px, calc(100% - 248px));
+    width: min(980px, calc(100% - 40px));
   }
 }
 
 @media (min-width: 1280px) and (max-width: 1535px) {
+  html:has([data-ad-rails="active"]) main {
+    width: calc(100% - 420px);
+    margin-inline: auto;
+  }
+
   html:has([data-ad-rails="active"]) .container-shell {
-    width: min(1080px, calc(100% - 380px));
+    width: min(980px, calc(100% - 40px));
   }
 
   .ad-side-rail {
