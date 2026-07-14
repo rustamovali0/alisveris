@@ -26,8 +26,42 @@ export function AdminAccess() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setAuthorized(window.localStorage.getItem(adminSessionKey) === "active");
-    setReady(true);
+    let cancelled = false;
+
+    async function restoreAdminSession() {
+      const cached = window.localStorage.getItem(adminSessionKey) === "active";
+      if (!isSupabaseConfigured) {
+        if (!cancelled) {
+          setAuthorized(process.env.NODE_ENV !== "production" && cached);
+          setReady(true);
+        }
+        return;
+      }
+
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        window.localStorage.removeItem(adminSessionKey);
+        if (!cancelled) setReady(true);
+        return;
+      }
+
+      const [adminResult, superAdminResult] = await Promise.all([
+        supabase.rpc("has_role", { required_role: "admin" }),
+        supabase.rpc("has_role", { required_role: "super_admin" }),
+      ]);
+      const allowed = Boolean(adminResult.data || superAdminResult.data);
+      if (!allowed) window.localStorage.removeItem(adminSessionKey);
+      if (!cancelled) {
+        setAuthorized(allowed);
+        setReady(true);
+      }
+    }
+
+    void restoreAdminSession();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -60,13 +94,21 @@ export function AdminAccess() {
       return;
     }
 
-    const [{ data: isAdmin }, { data: isSuperAdmin }] = await Promise.all([
+    const [adminRoleResult, superAdminRoleResult] = await Promise.all([
       supabase.rpc("has_role", { required_role: "admin" }),
       supabase.rpc("has_role", { required_role: "super_admin" }),
     ]);
+    if (adminRoleResult.error || superAdminRoleResult.error) {
+      await supabase.auth.signOut();
+      setError("Admin səlahiyyəti yoxlanıla bilmədi. Verilənlər bazası ayarlarını yoxlayın.");
+      return;
+    }
+
+    const isAdmin = adminRoleResult.data;
+    const isSuperAdmin = superAdminRoleResult.data;
     if (!isAdmin && !isSuperAdmin) {
       await supabase.auth.signOut();
-      setError(registerFailedLogin("admin", normalizedEmail));
+      setError("Bu hesaba admin səlahiyyəti verilməyib.");
       return;
     }
 

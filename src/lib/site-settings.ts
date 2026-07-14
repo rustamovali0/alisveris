@@ -1,3 +1,5 @@
+import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+
 export const siteSettingsStorageKey = "alisveris-site-settings";
 export const siteSettingsChangedEvent = "alisveris-site-settings-changed";
 
@@ -175,6 +177,36 @@ export const defaultSiteSettings: SiteSettings = {
   },
 };
 
+function normalizeSiteSettings(parsed: Partial<SiteSettings>): SiteSettings {
+  return {
+    theme: parsed.theme ?? defaultSiteSettings.theme,
+    identity: {
+      ...defaultSiteSettings.identity,
+      ...parsed.identity,
+    },
+    footer: {
+      ...defaultFooterSettings,
+      ...parsed.footer,
+      links: parsed.footer?.links?.length
+        ? parsed.footer.links
+        : defaultFooterSettings.links,
+      socials: parsed.footer?.socials?.length
+        ? parsed.footer.socials
+        : defaultFooterSettings.socials,
+    },
+    ads: {
+      left: {
+        ...defaultSiteSettings.ads.left,
+        ...parsed.ads?.left,
+      },
+      right: {
+        ...defaultSiteSettings.ads.right,
+        ...parsed.ads?.right,
+      },
+    },
+  };
+}
+
 export function readSiteSettings(): SiteSettings {
   if (typeof window === "undefined") return defaultSiteSettings;
 
@@ -183,33 +215,7 @@ export function readSiteSettings(): SiteSettings {
     if (!raw) return defaultSiteSettings;
     const parsed = JSON.parse(raw) as Partial<SiteSettings>;
 
-    return {
-      theme: parsed.theme ?? defaultSiteSettings.theme,
-      identity: {
-        ...defaultSiteSettings.identity,
-        ...parsed.identity,
-      },
-      footer: {
-        ...defaultFooterSettings,
-        ...parsed.footer,
-        links: parsed.footer?.links?.length
-          ? parsed.footer.links
-          : defaultFooterSettings.links,
-        socials: parsed.footer?.socials?.length
-          ? parsed.footer.socials
-          : defaultFooterSettings.socials,
-      },
-      ads: {
-        left: {
-          ...defaultSiteSettings.ads.left,
-          ...parsed.ads?.left,
-        },
-        right: {
-          ...defaultSiteSettings.ads.right,
-          ...parsed.ads?.right,
-        },
-      },
-    };
+    return normalizeSiteSettings(parsed);
   } catch {
     return defaultSiteSettings;
   }
@@ -218,4 +224,19 @@ export function readSiteSettings(): SiteSettings {
 export function saveSiteSettings(settings: SiteSettings) {
   window.localStorage.setItem(siteSettingsStorageKey, JSON.stringify(settings));
   window.dispatchEvent(new CustomEvent(siteSettingsChangedEvent, { detail: settings }));
+}
+
+export async function syncSiteSettingsFromCloud() {
+  if (!isSupabaseConfigured) return readSiteSettings();
+  const { data, error } = await createSupabaseBrowserClient()
+    .from("system_settings")
+    .select("value")
+    .eq("key", "site_settings")
+    .maybeSingle();
+  if (error || !data?.value || Object.keys(data.value as object).length === 0) {
+    return readSiteSettings();
+  }
+  const settings = normalizeSiteSettings(data.value as Partial<SiteSettings>);
+  saveSiteSettings(settings);
+  return settings;
 }

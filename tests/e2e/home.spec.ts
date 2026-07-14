@@ -117,6 +117,8 @@ test("admin sections and listing actions work", async ({ page }) => {
 
   await page.getByRole("button", { name: "Kateqoriyalar" }).click();
   await page.getByRole("button", { name: "Kateqoriya əlavə et" }).click();
+  await page.getByPlaceholder("Məsələn: Musiqi alətləri").fill("Musiqi alətləri");
+  await page.getByRole("button", { name: "Əlavə et", exact: true }).click();
   await expect(page.getByTestId("category-count")).toContainText("16 kateqoriya");
   await page.getByRole("button", { name: "Telefon atributları Marka, model, rəng, status, seçim və validation." }).click();
   await expect(page.getByTestId("selected-attribute")).toContainText("Telefon atributları");
@@ -124,6 +126,9 @@ test("admin sections and listing actions work", async ({ page }) => {
   await page.getByRole("button", { name: "Moderasiya" }).click();
   await page.getByRole("button", { name: "Spam elanlar Bax və tədbir gör" }).click();
   await expect(page.getByTestId("moderation-selection")).toContainText("Spam elanlar");
+  await expect(page.getByTestId("moderation-selection")).toContainText("Təkrarlanan elan");
+  await page.getByTestId("moderation-selection").getByRole("button", { name: "Həll et" }).click();
+  await expect(page.getByTestId("moderation-selection")).toContainText("açıq qeyd qalmayıb");
 
   await page.getByRole("button", { name: "Mağazalar" }).click();
   await page.getByTestId("store-approve-store-001").click();
@@ -135,6 +140,8 @@ test("admin sections and listing actions work", async ({ page }) => {
   await expect(page.getByText("Transaction siyahısı")).toBeVisible();
   await page.getByTestId("invoice-TX-1002").click();
   await expect(page.getByTestId("invoice-output")).toContainText("TX-1002 fakturası");
+  await expect(page.getByRole("dialog")).toContainText("VIP elan");
+  await page.getByRole("button", { name: "Pəncərəni bağla" }).click();
   await page.getByRole("button", { name: "Tamamla" }).click();
   await expect(page.getByText("completed").first()).toBeVisible();
 

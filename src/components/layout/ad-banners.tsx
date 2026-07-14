@@ -36,7 +36,7 @@ function DesktopBanner({
 
   return (
     <div
-      className={`pointer-events-none fixed bottom-0 top-16 z-30 hidden w-[min(300px,calc((100vw-1212px)/2))] 2xl:block ${
+      className={`ad-side-rail pointer-events-none fixed bottom-0 top-16 z-30 hidden min-[960px]:block ${
         side === "left" ? "left-0" : "right-0"
       }`}
       data-testid={`${side}-ad-banner`}
@@ -91,7 +91,7 @@ export function AdBanners() {
   const mobileBanner = banners[0];
 
   return (
-    <>
+    <div data-ad-rails={settings.ads.left.enabled || settings.ads.right.enabled ? "active" : undefined}>
       <DesktopBanner banner={settings.ads.left} side="left" />
       <DesktopBanner banner={settings.ads.right} side="right" />
 
@@ -115,7 +115,7 @@ export function AdBanners() {
         </Link>
       </div>
 
-      <div className="container-shell hidden pt-3 md:block 2xl:hidden">
+      <div className="container-shell hidden pt-3 md:block min-[960px]:hidden">
         <Link
           className="relative flex min-h-24 items-end overflow-hidden rounded-lg border border-border bg-card p-3 shadow-sm animate-slide-up"
           href={mobileBanner.href}
@@ -142,6 +142,6 @@ export function AdBanners() {
           </div>
         </Link>
       </div>
-    </>
+    </div>
   );
 }

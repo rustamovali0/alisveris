@@ -225,6 +225,32 @@ textarea {
   margin-inline: auto;
 }
 
+.ad-side-rail {
+  width: 112px;
+}
+
+@media (min-width: 960px) and (max-width: 1279px) {
+  html:has([data-ad-rails="active"]) .container-shell {
+    width: min(1180px, calc(100% - 248px));
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1535px) {
+  html:has([data-ad-rails="active"]) .container-shell {
+    width: min(1180px, calc(100% - 332px));
+  }
+
+  .ad-side-rail {
+    width: 150px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .ad-side-rail {
+    width: min(300px, calc((100vw - 1212px) / 2));
+  }
+}
+
 .soft-shadow {
   box-shadow: 0 18px 45px rgb(15 23 42 / 0.08);
 }

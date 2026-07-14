@@ -1,20 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   Activity,
   BadgeDollarSign,
   Ban,
   CheckCircle2,
+  Download,
+  Eye,
   FileText,
   Flag,
   LayoutDashboard,
   MessageSquare,
+  RefreshCw,
   Search,
   Settings,
   ShieldCheck,
   Store,
   Users,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +34,19 @@ import {
   type SiteSettings,
 } from "@/lib/site-settings";
 import { formatCurrency } from "@/lib/utils";
+import {
+  createAdminCategory,
+  loadAdminSnapshot,
+  saveCloudSiteSettings,
+  setAdminUserRole,
+  updateAdminListing,
+  updateAdminStore,
+  updateAdminTransaction,
+  updateAdminUser,
+  type AdminListingItem,
+  type AdminStoreItem,
+  type AdminTransactionItem,
+} from "@/lib/admin-api";
 
 const adminNav = [
   ["Dashboard", LayoutDashboard],
@@ -45,8 +62,15 @@ const adminNav = [
 type AdminSection = (typeof adminNav)[number][0];
 type ListingReviewStatus = "Gözləmədə" | "Təsdiqləndi" | "Rədd edildi";
 type UserStatus = "aktiv" | "bloklandı";
-type StoreStatus = "gözləyir" | "təsdiqləndi";
 type TransactionStatus = "pending" | "completed" | "failed" | "refunded";
+
+const initialAdminListings: AdminListingItem[] = listings.slice(0, 6).map((listing) => ({
+  id: listing.id,
+  title: listing.title,
+  city: listing.city,
+  price: listing.price,
+  status: "pending",
+}));
 
 const initialUsers = [
   { id: "usr-1", name: "Rauf Məmmədov", role: "store_owner", accountType: "store", status: "aktiv" as UserStatus, ads: "37 elan" },
@@ -63,6 +87,28 @@ const initialTransactions = [
 ];
 
 const moderationQueues = ["Şikayətlər", "Spam elanlar", "Şübhəli hesablar", "Qadağan sözlər", "IP fəaliyyəti", "Audit log"];
+const moderationCases: Record<string, { id: string; title: string; detail: string; severity: "yüksək" | "orta" | "aşağı" }[]> = {
+  Şikayətlər: [
+    { id: "REP-104", title: "Yanlış məhsul məlumatı", detail: "Elan qiyməti və təsviri uyğun gəlmir.", severity: "orta" },
+    { id: "REP-105", title: "Şübhəli ödəniş tələbi", detail: "Satıcı platformadan kənar öncədən ödəniş istəyir.", severity: "yüksək" },
+  ],
+  "Spam elanlar": [
+    { id: "SPM-208", title: "Təkrarlanan elan", detail: "Eyni şəkillərlə 6 elan yerləşdirilib.", severity: "orta" },
+  ],
+  "Şübhəli hesablar": [
+    { id: "USR-311", title: "Qısa müddətdə çoxsaylı giriş", detail: "Hesab 4 fərqli ölkədən giriş edib.", severity: "yüksək" },
+  ],
+  "Qadağan sözlər": [
+    { id: "TXT-087", title: "Qadağan ifadə aşkarlandı", detail: "Elan mətnində moderasiya tələb edən ifadə var.", severity: "aşağı" },
+  ],
+  "IP fəaliyyəti": [
+    { id: "IP-044", title: "Sürətli sorğu axını", detail: "Bir IP ünvanından normadan artıq sorğu gəlib.", severity: "yüksək" },
+  ],
+  "Audit log": [
+    { id: "LOG-901", title: "Admin rolu yeniləndi", detail: "İstifadəçi rolu admin tərəfindən dəyişdirilib.", severity: "aşağı" },
+    { id: "LOG-902", title: "Banner ayarları saxlanıldı", detail: "Sağ və sol reklam bannerləri yenilənib.", severity: "aşağı" },
+  ],
+};
 const cmsPages = ["Haqqımızda", "Qaydalar", "FAQ", "SEO metadata", "Footer", "Sosial şəbəkələr", "Bannerlər", "Təhlükəsizlik"];
 const socialOptions: { key: FooterSocialKey; label: string }[] = [
   { key: "instagram", label: "Instagram" },
@@ -73,81 +119,159 @@ const socialOptions: { key: FooterSocialKey; label: string }[] = [
 export function AdminDashboard() {
   const [activeSection, setActiveSection] = useState<AdminSection>("Dashboard");
   const [notice, setNotice] = useState("Admin panel hazırdır");
+  const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [adminListings, setAdminListings] = useState(initialAdminListings);
   const [selectedListing, setSelectedListing] = useState<string | null>(null);
   const [reviewStatuses, setReviewStatuses] = useState<Record<string, ListingReviewStatus>>(
-    () => Object.fromEntries(listings.slice(0, 6).map((listing) => [listing.id, "Gözləmədə"])),
+    () => Object.fromEntries(initialAdminListings.map((listing) => [listing.id, "Gözləmədə"])),
   );
   const [users, setUsers] = useState(initialUsers);
   const [categoryCount, setCategoryCount] = useState(15);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [selectedAttribute, setSelectedAttribute] = useState("Atribut seçilməyib");
-  const [selectedModerationQueue, setSelectedModerationQueue] = useState("Növbə seçilməyib");
-  const [storeStatuses, setStoreStatuses] = useState<Record<string, StoreStatus>>(
-    () => Object.fromEntries(stores.map((store) => [store.id, "gözləyir"])),
+  const [newAttributeName, setNewAttributeName] = useState("");
+  const [attributeFields, setAttributeFields] = useState<Record<string, string[]>>({
+    "Avtomobil atributları": ["Marka", "Model", "Buraxılış ili", "Yürüş"],
+    "Telefon atributları": ["Marka", "Model", "Yaddaş", "Rəng"],
+    "Əmlak atributları": ["Otaq sayı", "Sahə", "Mərtəbə", "Təmir"],
+  });
+  const [selectedModerationQueue, setSelectedModerationQueue] = useState<string | null>(null);
+  const [resolvedModeration, setResolvedModeration] = useState<string[]>([]);
+  const [adminStores, setAdminStores] = useState<AdminStoreItem[]>(() =>
+    stores.map((store) => ({ ...store, status: "gözləyir" })),
   );
   const [storeStats, setStoreStats] = useState("Mağaza statistikası seçilməyib");
-  const [transactions, setTransactions] = useState(initialTransactions);
-  const [invoice, setInvoice] = useState("Faktura seçilməyib");
+  const [transactions, setTransactions] = useState<AdminTransactionItem[]>(initialTransactions);
+  const [invoice, setInvoice] = useState<AdminTransactionItem | null>(null);
   const [cmsDraft, setCmsDraft] = useState("CMS səhifəsi seçilməyib");
+  const [cmsPage, setCmsPage] = useState<string | null>(null);
+  const [cmsContent, setCmsContent] = useState("");
+  const [commandOpen, setCommandOpen] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => readSiteSettings());
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    loadAdminSnapshot()
+      .then((snapshot) => {
+        if (!snapshot || cancelled) return;
+        setAdminListings(snapshot.listings);
+        setReviewStatuses(
+          Object.fromEntries(
+            snapshot.listings.map((listing) => [
+              listing.id,
+              listing.status === "active"
+                ? "Təsdiqləndi"
+                : listing.status === "rejected"
+                  ? "Rədd edildi"
+                  : "Gözləmədə",
+            ]),
+          ),
+        );
+        setUsers(snapshot.users);
+        setAdminStores(snapshot.stores);
+        setTransactions(snapshot.transactions);
+        setCategoryCount(snapshot.categoryCount);
+        setNotice("Supabase məlumatları yükləndi");
+      })
+      .catch((error: unknown) => {
+        setNotice(`Məlumatlar yüklənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const visibleListings = useMemo(() => {
     const lowered = query.toLowerCase().trim();
-    return listings
-      .slice(0, 6)
+    return adminListings
       .filter((listing) => !lowered || listing.title.toLowerCase().includes(lowered));
-  }, [query]);
+  }, [adminListings, query]);
 
   function setSection(section: AdminSection) {
     setActiveSection(section);
     setNotice(`${section} bölməsi açıldı`);
   }
 
-  function updateReviewStatus(id: string, status: ListingReviewStatus) {
+  async function updateReviewStatus(id: string, status: ListingReviewStatus) {
     setReviewStatuses((current) => ({ ...current, [id]: status }));
-    setNotice(`Elan statusu dəyişdi: ${status}`);
+    try {
+      await updateAdminListing(id, status === "Təsdiqləndi" ? "active" : "rejected");
+      setNotice(`Elan statusu dəyişdi: ${status}`);
+    } catch (error) {
+      setNotice(`Elan yenilənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
   }
 
   function openListing(id: string) {
-    const listing = listings.find((item) => item.id === id);
-    setSelectedListing(listing?.title ?? id);
+    const listing = adminListings.find((item) => item.id === id);
+    setSelectedListing(id);
     setNotice(`Elan baxışı açıldı: ${listing?.title ?? id}`);
   }
 
-  function changeUserRole(id: string) {
+  async function changeUserRole(id: string) {
+    const user = users.find((item) => item.id === id);
+    if (!user) return;
+    const nextRole = user.role === "admin" ? "user" : "admin";
     setUsers((current) =>
       current.map((user) =>
         user.id === id
-          ? { ...user, role: user.role === "admin" ? "user" : "admin" }
+          ? { ...user, role: nextRole }
           : user,
       ),
     );
-    setNotice("İstifadəçi rolu dəyişdirildi");
+    try {
+      await setAdminUserRole(id, nextRole);
+      setNotice("İstifadəçi rolu dəyişdirildi");
+    } catch (error) {
+      setNotice(`Rol dəyişmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
   }
 
-  function toggleUserBlock(id: string) {
+  async function toggleUserBlock(id: string) {
+    const user = users.find((item) => item.id === id);
+    if (!user) return;
+    const nextStatus = user.status === "aktiv" ? "bloklandı" : "aktiv";
     setUsers((current) =>
       current.map((user) =>
         user.id === id
-          ? { ...user, status: user.status === "aktiv" ? "bloklandı" : "aktiv" }
+          ? { ...user, status: nextStatus }
           : user,
       ),
     );
-    setNotice("İstifadəçi statusu yeniləndi");
+    try {
+      await updateAdminUser(id, { status: nextStatus === "aktiv" ? "active" : "blocked" });
+      setNotice("İstifadəçi statusu yeniləndi");
+    } catch (error) {
+      setNotice(`Status yenilənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
   }
 
-  function changeAccountType(id: string) {
+  async function changeAccountType(id: string) {
+    const user = users.find((item) => item.id === id);
+    if (!user) return;
+    const nextType = user.accountType === "store" ? "individual" : "store";
     setUsers((current) =>
       current.map((user) =>
         user.id === id
           ? {
               ...user,
-              accountType: user.accountType === "store" ? "individual" : "store",
+              accountType: nextType,
             }
           : user,
       ),
     );
-    setNotice("İstifadəçi hesab tipi admin tərəfindən dəyişdirildi");
+    try {
+      await updateAdminUser(id, { account_type: nextType });
+      setNotice("İstifadəçi hesab tipi admin tərəfindən dəyişdirildi");
+    } catch (error) {
+      setNotice(`Hesab tipi dəyişmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
   }
 
   function updateIdentity<K extends keyof SiteSettings["identity"]>(
@@ -160,18 +284,30 @@ export function AdminDashboard() {
     }));
   }
 
-  function approveStore(id: string) {
-    setStoreStatuses((current) => ({ ...current, [id]: "təsdiqləndi" }));
-    setNotice("Mağaza təsdiqləndi");
+  async function changeStoreStatus(id: string, status: "təsdiqləndi" | "rədd edildi") {
+    setAdminStores((current) =>
+      current.map((store) => (store.id === id ? { ...store, status } : store)),
+    );
+    try {
+      await updateAdminStore(id, status === "təsdiqləndi" ? "active" : "rejected");
+      setNotice(status === "təsdiqləndi" ? "Mağaza təsdiqləndi" : "Mağaza müraciəti rədd edildi");
+    } catch (error) {
+      setNotice(`Mağaza yenilənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
   }
 
-  function markTransactionCompleted(id: string) {
+  async function changeTransactionStatus(id: string, status: "completed" | "refunded") {
     setTransactions((current) =>
       current.map((transaction) =>
-        transaction.id === id ? { ...transaction, status: "completed" } : transaction,
+        transaction.id === id ? { ...transaction, status } : transaction,
       ),
     );
-    setNotice(`${id} tamamlandı`);
+    try {
+      await updateAdminTransaction(id, status);
+      setNotice(status === "completed" ? `${id} tamamlandı` : `${id} geri qaytarıldı`);
+    } catch (error) {
+      setNotice(`Ödəniş yenilənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
   }
 
   function updateFooterField<K extends keyof SiteSettings["footer"]>(
@@ -199,10 +335,69 @@ export function AdminDashboard() {
     });
   }
 
-  function persistSiteSettings() {
+  async function persistSiteSettings() {
     saveSiteSettings(siteSettings);
-    setNotice("Sayt teması və footer ayarları saxlanıldı");
-    setCmsDraft("Footer, sosial ikonlar və tema ayarları yeniləndi");
+    try {
+      await saveCloudSiteSettings(siteSettings);
+      setNotice("Sayt teması və footer ayarları bütün istifadəçilər üçün saxlanıldı");
+      setCmsDraft("Footer, sosial ikonlar, banner və tema ayarları yeniləndi");
+    } catch (error) {
+      setNotice(`Ayarlar yalnız bu brauzerdə saxlanıldı: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
+  }
+
+  async function submitCategory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = newCategoryName.trim();
+    if (name.length < 2) {
+      setNotice("Kateqoriya adı ən azı 2 simvol olmalıdır");
+      return;
+    }
+    const slug = name
+      .toLocaleLowerCase("az")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/ə/g, "e")
+      .replace(/ı/g, "i")
+      .replace(/ş/g, "s")
+      .replace(/ç/g, "c")
+      .replace(/ö/g, "o")
+      .replace(/ü/g, "u")
+      .replace(/ğ/g, "g")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    try {
+      await createAdminCategory(name, slug);
+      setCategoryCount((count) => count + 1);
+      setNewCategoryName("");
+      setCategoryDialogOpen(false);
+      setNotice(`${name} kateqoriyası əlavə edildi`);
+    } catch (error) {
+      setNotice(`Kateqoriya əlavə edilmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
+    }
+  }
+
+  function resolveModeration(id: string, action: string) {
+    setResolvedModeration((current) => [...current, id]);
+    setNotice(`${id}: ${action}`);
+  }
+
+  function downloadInvoice(transaction: AdminTransactionItem) {
+    const body = [
+      "alışveriş.az elektron faktura",
+      `Əməliyyat: ${transaction.id}`,
+      `Xidmət: ${transaction.product}`,
+      `Məbləğ: ${transaction.amount}`,
+      `Status: ${transaction.status}`,
+      `Tarix: ${transaction.createdAt ? new Date(transaction.createdAt).toLocaleString("az-AZ") : new Date().toLocaleString("az-AZ")}`,
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([body], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${transaction.id}-faktura.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setNotice(`${transaction.id} fakturası endirildi`);
   }
 
   function updateAdBanner(
@@ -252,7 +447,7 @@ export function AdminDashboard() {
                 Moderasiya, ödəniş, mağaza, audit log və CMS idarəetməsi.
               </p>
             </div>
-            <Button type="button" onClick={() => setSection("Elanların idarəsi")}>
+            <Button type="button" onClick={() => setCommandOpen(true)}>
               Yeni admin əməliyyatı
             </Button>
           </div>
@@ -263,6 +458,7 @@ export function AdminDashboard() {
           >
             <CheckCircle2 className="h-4 w-4 text-green-300" />
             {notice}
+            {loading ? <RefreshCw className="ml-auto h-4 w-4 animate-spin" /> : null}
           </div>
 
           {activeSection === "Dashboard" ? (
@@ -340,10 +536,7 @@ export function AdminDashboard() {
                   <h2 className="text-xl font-black">Kateqoriya və dynamic attributes</h2>
                   <p className="mt-1 text-sm text-slate-300" data-testid="category-count">{categoryCount} kateqoriya aktivdir</p>
                 </div>
-                <Button type="button" onClick={() => {
-                  setCategoryCount((count) => count + 1);
-                  setNotice("Yeni kateqoriya əlavə edildi");
-                }}>
+                <Button type="button" onClick={() => setCategoryDialogOpen(true)}>
                   Kateqoriya əlavə et
                 </Button>
               </div>
@@ -363,7 +556,35 @@ export function AdminDashboard() {
                   </button>
                 ))}
               </div>
-              <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="selected-attribute">{selectedAttribute}</p>
+              {selectedAttribute !== "Atribut seçilməyib" ? (
+                <div className="mt-4 rounded-lg border border-white/10 bg-slate-950 p-4" data-testid="selected-attribute">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-black">{selectedAttribute}</h3>
+                    <Button aria-label="Atribut panelini bağla" size="icon" type="button" variant="ghost" onClick={() => setSelectedAttribute("Atribut seçilməyib")}><X className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(attributeFields[selectedAttribute] ?? []).map((field) => (
+                      <span className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-slate-900 px-3 py-2 text-sm" key={field}>
+                        {field}
+                        <button aria-label={`${field} atributunu sil`} className="text-slate-400 hover:text-red-300" type="button" onClick={() => setAttributeFields((current) => ({ ...current, [selectedAttribute]: current[selectedAttribute].filter((item) => item !== field) }))}><X className="h-3.5 w-3.5" /></button>
+                      </span>
+                    ))}
+                  </div>
+                  <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={(event) => {
+                    event.preventDefault();
+                    const name = newAttributeName.trim();
+                    if (!name) return;
+                    setAttributeFields((current) => ({ ...current, [selectedAttribute]: [...(current[selectedAttribute] ?? []), name] }));
+                    setNewAttributeName("");
+                    setNotice(`${name} atributu əlavə edildi`);
+                  }}>
+                    <Input className="border-white/10 bg-slate-900 text-white" placeholder="Yeni atribut adı" value={newAttributeName} onChange={(event) => setNewAttributeName(event.target.value)} />
+                    <Button type="submit">Atribut əlavə et</Button>
+                  </form>
+                </div>
+              ) : (
+                <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="selected-attribute">Atribut seçilməyib</p>
+              )}
             </Card>
           ) : null}
 
@@ -387,7 +608,54 @@ export function AdminDashboard() {
                   </button>
                 ))}
               </div>
-              <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="moderation-selection">{selectedModerationQueue}</p>
+              {selectedModerationQueue ? (
+                <div className="mt-4 rounded-lg border border-white/10 bg-slate-950 p-4" data-testid="moderation-selection">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-black">{selectedModerationQueue}</p>
+                      <p className="text-sm text-slate-400">Növbədəki qeydləri yoxlayın və tədbir seçin.</p>
+                    </div>
+                    <Button aria-label="Moderasiya panelini bağla" size="icon" type="button" variant="ghost" onClick={() => setSelectedModerationQueue(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    {(moderationCases[selectedModerationQueue] ?? [])
+                      .filter((item) => !resolvedModeration.includes(item.id))
+                      .map((item) => (
+                        <div className="grid gap-3 rounded-lg border border-white/10 bg-slate-900 p-4 lg:grid-cols-[1fr_auto]" key={item.id}>
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-bold">{item.id} · {item.title}</p>
+                              <Badge tone={item.severity === "yüksək" ? "red" : item.severity === "orta" ? "amber" : "green"}>{item.severity}</Badge>
+                            </div>
+                            <p className="mt-2 text-sm text-slate-300">{item.detail}</p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button size="sm" type="button" variant="secondary" onClick={() => setNotice(`${item.id} detalı göstərilir: ${item.detail}`)}>
+                              <Eye className="h-4 w-4" /> Detal
+                            </Button>
+                            {selectedModerationQueue !== "Audit log" ? (
+                              <>
+                                <Button size="sm" type="button" onClick={() => resolveModeration(item.id, "Həll edildi")}>
+                                  Həll et
+                                </Button>
+                                <Button size="sm" type="button" variant="danger" onClick={() => resolveModeration(item.id, "Bloklandı")}>
+                                  <Ban className="h-4 w-4" /> Blokla
+                                </Button>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))}
+                    {(moderationCases[selectedModerationQueue] ?? []).every((item) => resolvedModeration.includes(item.id)) ? (
+                      <p className="rounded-lg border border-green-400/20 bg-green-400/10 p-4 text-sm text-green-200">Bu növbədə açıq qeyd qalmayıb.</p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm text-slate-300" data-testid="moderation-selection">Növbə seçin</p>
+              )}
             </Card>
           ) : null}
 
@@ -395,19 +663,22 @@ export function AdminDashboard() {
             <Card className="border-white/10 bg-white/[0.04] p-5 text-white">
               <h2 className="text-xl font-black">Mağaza müraciətləri</h2>
               <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {stores.map((store) => (
+                {adminStores.map((store) => (
                   <div className="rounded-lg bg-slate-900 p-4" key={store.id}>
                     <div className="flex items-center gap-3">
                       <div className="grid h-11 w-11 place-items-center rounded-lg bg-primary text-sm font-black">{store.logo}</div>
                       <div>
                         <p className="font-bold">{store.name}</p>
                         <p className="text-sm text-slate-300">{store.listingsCount} elan · {store.city}</p>
-                        <Badge className="mt-2" tone={storeStatuses[store.id] === "təsdiqləndi" ? "green" : "amber"}>{storeStatuses[store.id]}</Badge>
+                        <Badge className="mt-2" tone={store.status === "təsdiqləndi" ? "green" : store.status === "rədd edildi" ? "red" : "amber"}>{store.status}</Badge>
                       </div>
                     </div>
                     <div className="mt-4 flex gap-2">
-                      <Button data-testid={`store-approve-${store.id}`} size="sm" type="button" onClick={() => approveStore(store.id)}>
+                      <Button data-testid={`store-approve-${store.id}`} size="sm" type="button" onClick={() => changeStoreStatus(store.id, "təsdiqləndi")}>
                         Təsdiqlə
+                      </Button>
+                      <Button size="sm" type="button" variant="danger" onClick={() => changeStoreStatus(store.id, "rədd edildi")}>
+                        Rədd et
                       </Button>
                       <Button size="sm" type="button" variant="secondary" onClick={() => {
                         setStoreStats(`${store.name}: ${store.listingsCount} elan, reytinq ${store.rating}`);
@@ -436,21 +707,26 @@ export function AdminDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <Badge tone={transaction.status === "completed" ? "green" : transaction.status === "failed" ? "red" : "amber"}>{transaction.status}</Badge>
                       <Button data-testid={`invoice-${transaction.id}`} size="sm" type="button" variant="secondary" onClick={() => {
-                        setInvoice(`${transaction.id} fakturası hazırdır`);
+                        setInvoice(transaction);
                         setNotice(`${transaction.id} fakturası açıldı`);
                       }}>
                         Faktura
                       </Button>
                       {transaction.status === "pending" ? (
-                        <Button size="sm" type="button" onClick={() => markTransactionCompleted(transaction.id)}>
+                        <Button size="sm" type="button" onClick={() => changeTransactionStatus(transaction.id, "completed")}>
                           Tamamla
+                        </Button>
+                      ) : null}
+                      {transaction.status === "completed" ? (
+                        <Button size="sm" type="button" variant="danger" onClick={() => changeTransactionStatus(transaction.id, "refunded")}>
+                          Geri qaytar
                         </Button>
                       ) : null}
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="invoice-output">{invoice}</p>
+              <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="invoice-output">{invoice ? `${invoice.id} fakturası açıldı` : "Faktura seçilməyib"}</p>
             </Card>
           ) : null}
 
@@ -465,6 +741,8 @@ export function AdminDashboard() {
                     type="button"
                     onClick={() => {
                       setCmsDraft(`${item} redaktə paneli açıldı`);
+                      setCmsPage(item);
+                      setCmsContent(`${item} səhifəsinin məzmununu burada redaktə edin.`);
                       setNotice(`${item} redaktə olunur`);
                     }}
                   >
@@ -474,6 +752,28 @@ export function AdminDashboard() {
                 ))}
               </div>
               <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="cms-output">{cmsDraft}</p>
+              {cmsPage ? (
+                <section className="mt-4 rounded-lg border border-white/10 bg-slate-900 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-black">{cmsPage} redaktoru</h3>
+                    <Button aria-label="CMS redaktorunu bağla" size="icon" type="button" variant="ghost" onClick={() => setCmsPage(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <textarea
+                    aria-label={`${cmsPage} məzmunu`}
+                    className="mt-3 min-h-40 w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none focus:border-primary"
+                    value={cmsContent}
+                    onChange={(event) => setCmsContent(event.target.value)}
+                  />
+                  <Button className="mt-3" type="button" onClick={() => {
+                    setCmsDraft(`${cmsPage} məzmunu saxlanıldı`);
+                    setNotice(`${cmsPage} yayımlandı`);
+                  }}>
+                    CMS məzmununu saxla
+                  </Button>
+                </section>
+              ) : null}
               <section className="mt-5 rounded-lg bg-slate-900 p-4">
                 <h3 className="text-lg font-black">Loqo və sayt məlumatları</h3>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -699,12 +999,104 @@ export function AdminDashboard() {
           ) : null}
         </main>
       </div>
+
+      {commandOpen ? (
+        <AdminModal title="Yeni admin əməliyyatı" onClose={() => setCommandOpen(false)}>
+          <p className="text-sm text-slate-300">İdarə etmək istədiyiniz bölməni seçin.</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {adminNav.slice(1).map(([label, Icon]) => (
+              <button
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-900 p-3 text-left font-semibold hover:border-primary"
+                key={label}
+                type="button"
+                onClick={() => {
+                  setSection(label);
+                  setCommandOpen(false);
+                }}
+              >
+                <Icon className="h-4 w-4 text-primary" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </AdminModal>
+      ) : null}
+
+      {categoryDialogOpen ? (
+        <AdminModal title="Yeni kateqoriya" onClose={() => setCategoryDialogOpen(false)}>
+          <form className="grid gap-4" onSubmit={submitCategory}>
+            <label>
+              <span className="text-sm font-semibold">Kateqoriya adı</span>
+              <Input
+                autoFocus
+                className="mt-2 border-white/10 bg-slate-900 text-white"
+                placeholder="Məsələn: Musiqi alətləri"
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+              />
+            </label>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setCategoryDialogOpen(false)}>Ləğv et</Button>
+              <Button type="submit">Əlavə et</Button>
+            </div>
+          </form>
+        </AdminModal>
+      ) : null}
+
+      {invoice ? (
+        <AdminModal title={`${invoice.id} fakturası`} onClose={() => setInvoice(null)}>
+          <div className="rounded-lg border border-white/10 bg-slate-900 p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase text-slate-400">Xidmət</p>
+                <p className="mt-1 text-lg font-black">{invoice.product}</p>
+              </div>
+              <Badge tone={invoice.status === "completed" ? "green" : invoice.status === "failed" ? "red" : "amber"}>{invoice.status}</Badge>
+            </div>
+            <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+              <div><dt className="text-slate-400">Əməliyyat</dt><dd className="mt-1 font-bold">{invoice.id}</dd></div>
+              <div><dt className="text-slate-400">Məbləğ</dt><dd className="mt-1 font-bold">{invoice.amount}</dd></div>
+              <div><dt className="text-slate-400">Tarix</dt><dd className="mt-1 font-bold">{invoice.createdAt ? new Date(invoice.createdAt).toLocaleString("az-AZ") : new Date().toLocaleDateString("az-AZ")}</dd></div>
+              <div><dt className="text-slate-400">Ödəniş üsulu</dt><dd className="mt-1 font-bold">Bank kartı</dd></div>
+            </dl>
+          </div>
+          <Button className="mt-4 w-full" type="button" onClick={() => downloadInvoice(invoice)}>
+            <Download className="h-4 w-4" /> Fakturanı endir
+          </Button>
+        </AdminModal>
+      ) : null}
+    </div>
+  );
+}
+
+function AdminModal({
+  children,
+  onClose,
+  title,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+  title: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-black/70 p-4" role="presentation" onMouseDown={(event) => {
+      if (event.currentTarget === event.target) onClose();
+    }}>
+      <div aria-modal="true" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg border border-white/10 bg-slate-950 p-5 text-white shadow-2xl" role="dialog">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-black">{title}</h2>
+          <Button aria-label="Pəncərəni bağla" size="icon" type="button" variant="ghost" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
 
 type ListingModerationTableProps = {
-  listings: typeof import("@/lib/mock-data").listings;
+  listings: AdminListingItem[];
   query: string;
   reviewStatuses: Record<string, ListingReviewStatus>;
   selectedListing: string | null;
@@ -722,6 +1114,8 @@ function ListingModerationTable({
   openListing,
   updateReviewStatus,
 }: ListingModerationTableProps) {
+  const selectedItem = visibleListings.find((listing) => listing.id === selectedListing);
+
   return (
     <Card className="border-white/10 bg-white/[0.04] p-5 text-white">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -767,9 +1161,24 @@ function ListingModerationTable({
           </div>
         ))}
       </div>
-      <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="selected-listing">
-        {selectedListing ? `Seçilmiş elan: ${selectedListing}` : "Elan seçilməyib"}
-      </p>
+      {selectedItem ? (
+        <div className="mt-4 rounded-lg border border-primary/30 bg-slate-900 p-4" data-testid="selected-listing">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase text-primary">Elan detalı</p>
+              <p className="mt-1 text-lg font-black">{selectedItem.title}</p>
+              <p className="mt-2 text-sm text-slate-300">{selectedItem.city} · {formatCurrency(selectedItem.price)}</p>
+            </div>
+            <Badge tone={reviewStatuses[selectedItem.id] === "Təsdiqləndi" ? "green" : reviewStatuses[selectedItem.id] === "Rədd edildi" ? "red" : "amber"}>{reviewStatuses[selectedItem.id]}</Badge>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button size="sm" type="button" onClick={() => updateReviewStatus(selectedItem.id, "Təsdiqləndi")}>Təsdiqlə</Button>
+            <Button size="sm" type="button" variant="danger" onClick={() => updateReviewStatus(selectedItem.id, "Rədd edildi")}>Rədd et</Button>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 rounded-lg bg-slate-900 p-3 text-sm" data-testid="selected-listing">Elan seçilməyib</p>
+      )}
     </Card>
   );
 }

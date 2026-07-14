@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   readSiteSettings,
   siteSettingsChangedEvent,
+  syncSiteSettingsFromCloud,
   type SiteSettings,
 } from "@/lib/site-settings";
 import { AccountProvider } from "@/components/providers/account-provider";
@@ -47,6 +48,7 @@ export function AppProviders({ children }: AppProvidersProps) {
     }
 
     applyTheme();
+    void syncSiteSettingsFromCloud().then(applyTheme);
 
     function handleSettingsChange(event: Event) {
       applyTheme((event as CustomEvent<SiteSettings>).detail);

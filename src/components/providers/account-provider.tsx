@@ -116,17 +116,32 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const email = input.email.trim().toLowerCase();
     let userId = window.crypto.randomUUID();
 
+    if (!isSupabaseConfigured && process.env.NODE_ENV === "production") {
+      throw new Error(
+        "Qeydiyyat xidməti düzgün qoşulmayıb. Supabase layihə ünvanını yoxlayın.",
+      );
+    }
+
     if (isSupabaseConfigured) {
-      const supabase = createSupabaseBrowserClient();
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: input.password,
-        options: {
-          data: { full_name: input.name.trim(), account_type: input.accountType },
-        },
-      });
-      if (error) throw new Error(error.message);
-      if (data.user) userId = data.user.id;
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password: input.password,
+          options: {
+            data: { full_name: input.name.trim(), account_type: input.accountType },
+          },
+        });
+        if (error) throw new Error(error.message);
+        if (data.user) userId = data.user.id;
+      } catch (registerError) {
+        if (registerError instanceof TypeError) {
+          throw new Error(
+            "Qeydiyyat xidmətinə qoşulmaq mümkün olmadı. Supabase ünvanını yoxlayın.",
+          );
+        }
+        throw registerError;
+      }
     }
 
     const profile: AccountProfile = {
