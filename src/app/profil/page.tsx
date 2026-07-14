@@ -23,6 +23,44 @@ import { Card } from "@/components/ui/card";
 import { listings as initialListings } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/utils";
 
+type SweetAlertResult = { isConfirmed: boolean };
+type SweetAlertOptions = Record<string, unknown>;
+type SweetAlertApi = {
+  fire: (options: SweetAlertOptions) => Promise<SweetAlertResult>;
+};
+
+declare global {
+  interface Window {
+    Swal?: SweetAlertApi;
+  }
+}
+
+let sweetAlertPromise: Promise<SweetAlertApi> | null = null;
+
+function getSweetAlert(): Promise<SweetAlertApi> {
+  if (window.Swal) return Promise.resolve(window.Swal);
+  if (sweetAlertPromise) return sweetAlertPromise;
+
+  sweetAlertPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>("script[data-sweetalert2]");
+    if (existing) {
+      existing.addEventListener("load", () => window.Swal ? resolve(window.Swal) : reject(new Error("SweetAlert2 yüklənmədi")));
+      existing.addEventListener("error", () => reject(new Error("SweetAlert2 yüklənmədi")));
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js";
+    script.async = true;
+    script.dataset.sweetalert2 = "true";
+    script.onload = () => window.Swal ? resolve(window.Swal) : reject(new Error("SweetAlert2 yüklənmədi"));
+    script.onerror = () => reject(new Error("SweetAlert2 yüklənmədi"));
+    document.head.appendChild(script);
+  });
+
+  return sweetAlertPromise;
+}
+
 const menu = [
   ["Ümumi məlumat", UserRound],
   ["Elanlarım", Package],
@@ -64,31 +102,84 @@ export default function ProfilePage() {
     window.setTimeout(() => setMessage(""), 2600);
   }
 
-  function handleMenu(label: string) {
+  async function showSuccess(title: string) {
+    try {
+      const Swal = await getSweetAlert();
+      await Swal.fire({
+        icon: "success",
+        title,
+        showConfirmButton: false,
+        timer: 1600,
+        timerProgressBar: true,
+        toast: true,
+        position: "top-end",
+      });
+    } catch {
+      notify(title);
+    }
+  }
+
+  async function handleMenu(label: string) {
     if (label === "Yeni elan") {
       router.push("/elan-yerlesdir");
       return;
     }
+
     if (label === "Çıxış") {
-      const accepted = window.confirm("Hesabdan çıxmaq istədiyinizə əminsiniz?");
-      if (accepted) router.push("/");
+      try {
+        const Swal = await getSweetAlert();
+        const result = await Swal.fire({
+          icon: "question",
+          title: "Hesabdan çıxış",
+          text: "Hesabdan çıxmaq istədiyinizə əminsiniz?",
+          showCancelButton: true,
+          confirmButtonText: "Bəli, çıx",
+          cancelButtonText: "Ləğv et",
+          confirmButtonColor: "#7c3aed",
+          cancelButtonColor: "#64748b",
+          reverseButtons: true,
+          focusCancel: true,
+        });
+        if (result.isConfirmed) router.push("/");
+      } catch {
+        notify("Təsdiq pəncərəsi yüklənmədi");
+      }
       return;
     }
+
     setActiveMenu(label);
     notify(`${label} bölməsi açıldı`);
   }
 
-  function removeListing(id: string | number, title: string) {
-    if (!window.confirm(`“${title}” elanını silmək istəyirsiniz?`)) return;
-    setItems((current) => current.filter((item) => item.id !== id));
-    notify("Elan silindi");
+  async function removeListing(id: string | number, title: string) {
+    try {
+      const Swal = await getSweetAlert();
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "Elanı silmək istəyirsiniz?",
+        text: `“${title}” elanı geri qaytarılmayacaq.`,
+        showCancelButton: true,
+        confirmButtonText: "Bəli, sil",
+        cancelButtonText: "Ləğv et",
+        confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#64748b",
+        reverseButtons: true,
+        focusCancel: true,
+      });
+
+      if (!result.isConfirmed) return;
+      setItems((current) => current.filter((item) => item.id !== id));
+      await showSuccess("Elan silindi");
+    } catch {
+      notify("Elanı silmək mümkün olmadı");
+    }
   }
 
-  function togglePremium(id: string | number) {
+  async function togglePremium(id: string | number) {
     setItems((current) =>
       current.map((item) => (item.id === id ? { ...item, isPremium: !item.isPremium } : item)),
     );
-    notify("Premium statusu yeniləndi");
+    await showSuccess("Premium statusu yeniləndi");
   }
 
   return (
@@ -113,7 +204,7 @@ export default function ProfilePage() {
                   activeMenu === label ? "bg-primary text-white" : "hover:bg-primary-soft/60"
                 }`}
                 key={label}
-                onClick={() => handleMenu(label)}
+                onClick={() => void handleMenu(label)}
                 type="button"
               >
                 <Icon className="h-4 w-4" />
@@ -130,7 +221,7 @@ export default function ProfilePage() {
                     activeMenu === label ? "border-primary bg-primary text-white" : "border-border bg-card"
                   }`}
                   key={label}
-                  onClick={() => handleMenu(label)}
+                  onClick={() => void handleMenu(label)}
                   type="button"
                 >
                   {label}
@@ -193,8 +284,8 @@ export default function ProfilePage() {
                         <div className="flex min-w-0 flex-wrap gap-2">
                           <Button size="sm" type="button" variant="secondary" onClick={() => notify("Redaktə forması açılacaq")}>Redaktə et</Button>
                           <Button size="sm" type="button" variant="secondary" onClick={() => setStatsId((value) => (value === listing.id ? null : listing.id))}>Statistika</Button>
-                          <Button size="sm" type="button" variant="secondary" onClick={() => togglePremium(listing.id)}>{listing.isPremium ? "Premiumdən çıxar" : "Premium et"}</Button>
-                          <Button size="sm" type="button" variant="danger" onClick={() => removeListing(listing.id, listing.title)}>Sil</Button>
+                          <Button size="sm" type="button" variant="secondary" onClick={() => void togglePremium(listing.id)}>{listing.isPremium ? "Premiumdən çıxar" : "Premium et"}</Button>
+                          <Button size="sm" type="button" variant="danger" onClick={() => void removeListing(listing.id, listing.title)}>Sil</Button>
                         </div>
                       </div>
 
