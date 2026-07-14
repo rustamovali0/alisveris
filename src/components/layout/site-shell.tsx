@@ -11,8 +11,8 @@ type SiteShellProps = {
 export function SiteShell({ children }: SiteShellProps) {
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden pb-16 md:pb-0">
-      <AdBanners />
       <Header />
+      <AdBanners />
       <main className="min-w-0 flex-1">{children}</main>
       <Footer />
       <BottomNav />

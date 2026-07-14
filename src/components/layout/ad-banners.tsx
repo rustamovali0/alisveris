@@ -115,7 +115,7 @@ export function AdBanners() {
         </Link>
       </div>
 
-      <div className="container-shell hidden pt-3 md:block min-[960px]:hidden">
+      <div className="ad-tablet-banner container-shell hidden pt-3 md:block">
         <Link
           className="relative flex min-h-24 items-end overflow-hidden rounded-lg border border-border bg-card p-3 shadow-sm animate-slide-up"
           href={mobileBanner.href}
