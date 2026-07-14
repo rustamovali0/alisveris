@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { MapPin, Search, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cities, popularSearches } from "@/lib/mock-data";
@@ -25,10 +25,6 @@ export function HeroSearch() {
       </form>
       <div className="hidden min-h-[520px] items-center gap-10 py-10 md:grid lg:grid-cols-[1.1fr_0.9fr]">
         <div className="max-w-2xl">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm font-semibold text-primary-dark dark:text-purple-100">
-            <Sparkles className="h-4 w-4 text-warning" />
-            Premium marketplace təcrübəsi
-          </div>
           <h1 className="text-4xl font-black leading-tight tracking-normal sm:text-5xl lg:text-6xl">
             Al, sat və axtardığını asanlıqla tap
           </h1>
