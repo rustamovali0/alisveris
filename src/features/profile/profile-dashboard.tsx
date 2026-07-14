@@ -23,8 +23,50 @@ const menu = [
 ] as const;
 
 type MenuLabel = (typeof menu)[number][0];
+type DbListingStatus = "draft" | "pending" | "active" | "rejected" | "expired" | "sold" | "disabled";
+
+const statusLabels: Record<DbListingStatus, ProfileTab> = {
+  active: "Aktiv",
+  pending: "Gözləmədə",
+  rejected: "Rədd edilmiş",
+  expired: "Vaxtı bitmiş",
+  sold: "Satılmış",
+  draft: "Draft",
+  disabled: "Draft",
+};
 
 declare global { interface Window { Swal?: { fire: (options: Record<string, unknown>) => Promise<{ isConfirmed?: boolean }> } } }
+
+function normalizeListing(row: Record<string, unknown>): ProfileListing {
+  const status = String(row.status ?? "draft") as DbListingStatus;
+  return {
+    id: String(row.id),
+    slug: String(row.slug ?? row.id),
+    title: String(row.title ?? "Adsız elan"),
+    price: Number(row.price ?? 0),
+    currency: "AZN",
+    city: "",
+    district: "",
+    date: String(row.created_at ?? ""),
+    category: "",
+    subcategory: "",
+    condition: row.condition === "new" ? "new" : "used",
+    sellerType: row.store_id ? "store" : "individual",
+    sellerName: "",
+    isPremium: Boolean(row.is_premium),
+    isVip: Boolean(row.is_vip),
+    delivery: Boolean(row.delivery_available),
+    image: "",
+    images: [],
+    views: Number(row.views ?? 0),
+    favorites: Number(row.favorites ?? 0),
+    phone: String(row.phone ?? ""),
+    whatsapp: String(row.whatsapp ?? ""),
+    description: String(row.description ?? ""),
+    attributes: {},
+    status: statusLabels[status] ?? "Draft",
+  };
+}
 
 export function ProfileDashboard() {
   const router = useRouter();
@@ -38,7 +80,6 @@ export function ProfileDashboard() {
 
   useEffect(() => {
     const accountId = account?.id;
-
     if (!accountId) {
       setItems([]);
       setBalance(0);
@@ -48,55 +89,34 @@ export function ProfileDashboard() {
     }
 
     let cancelled = false;
-
     async function load(userId: string) {
       setLoading(true);
-
       if (isSupabaseConfigured) {
         const supabase = createSupabaseBrowserClient();
         const [listingResult, walletResult, messageResult] = await Promise.all([
-          supabase.from("listings").select("*").eq("owner_id", userId).order("created_at", { ascending: false }),
+          supabase.from("listings").select("*").eq("seller_id", userId).order("created_at", { ascending: false }),
           supabase.from("wallets").select("balance").eq("user_id", userId).maybeSingle(),
           supabase.from("messages").select("id", { count: "exact", head: true }).eq("receiver_id", userId),
         ]);
 
-        if (!cancelled && !listingResult.error) setItems((listingResult.data ?? []) as ProfileListing[]);
-        if (!cancelled && !walletResult.error) setBalance(Number(walletResult.data?.balance ?? 0));
-        if (!cancelled && !messageResult.error) setMessageCount(messageResult.count ?? 0);
-      } else {
-        const listingKey = `alisveris-user-listings-v1:${userId}`;
-        const balanceKey = `alisveris-user-balance-v1:${userId}`;
-        const messageKey = `alisveris-user-messages-v1:${userId}`;
-
-        try {
-          const localItems = JSON.parse(localStorage.getItem(listingKey) ?? "[]");
-          const localMessages = JSON.parse(localStorage.getItem(messageKey) ?? "[]");
-
-          if (!cancelled) {
-            setItems(Array.isArray(localItems) ? localItems : []);
-            setBalance(Number(localStorage.getItem(balanceKey) ?? 0));
-            setMessageCount(Array.isArray(localMessages) ? localMessages.length : 0);
-          }
-        } catch {
-          if (!cancelled) {
-            setItems([]);
-            setBalance(0);
-            setMessageCount(0);
-          }
+        if (!cancelled) {
+          setItems(listingResult.error ? [] : (listingResult.data ?? []).map((row) => normalizeListing(row as Record<string, unknown>)));
+          setBalance(walletResult.error ? 0 : Number(walletResult.data?.balance ?? 0));
+          setMessageCount(messageResult.error ? 0 : messageResult.count ?? 0);
         }
+      } else if (!cancelled) {
+        setItems([]);
+        setBalance(0);
+        setMessageCount(0);
       }
-
       if (!cancelled) setLoading(false);
     }
 
     void load(accountId);
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [account?.id]);
 
-  const activeItems = useMemo(() => items.filter((item) => (item.status ?? "Aktiv") === "Aktiv"), [items]);
+  const activeItems = useMemo(() => items.filter((item) => item.status === "Aktiv"), [items]);
   const phoneClicks = useMemo(() => items.reduce((sum, item) => sum + Math.max(0, Math.round((item.views ?? 0) / 9)), 0), [items]);
 
   async function confirm(title: string, text: string) {
@@ -114,30 +134,24 @@ export function ProfileDashboard() {
   }
 
   async function deleteListing(listing: ProfileListing) {
-    if (!(await confirm("Elanı silmək istəyirsiniz?", `“${listing.title}” elanı silinəcək.`))) return;
-    const next = items.filter((item) => item.id !== listing.id);
-    setItems(next);
-
     const accountId = account?.id;
-    if (!accountId) return;
-
-    localStorage.setItem(`alisveris-user-listings-v1:${accountId}`, JSON.stringify(next));
+    if (!accountId || !(await confirm("Elanı silmək istəyirsiniz?", `“${listing.title}” elanı silinəcək.`))) return;
     if (isSupabaseConfigured) {
-      await createSupabaseBrowserClient().from("listings").delete().eq("id", listing.id).eq("owner_id", accountId);
+      const { error } = await createSupabaseBrowserClient().from("listings").delete().eq("id", listing.id).eq("seller_id", accountId);
+      if (error) return;
     }
+    setItems((current) => current.filter((item) => item.id !== listing.id));
   }
 
   async function togglePremium(listing: ProfileListing) {
-    const next = items.map((item) => item.id === listing.id ? { ...item, isPremium: !item.isPremium } : item);
-    setItems(next);
-
     const accountId = account?.id;
     if (!accountId) return;
-
-    localStorage.setItem(`alisveris-user-listings-v1:${accountId}`, JSON.stringify(next));
+    const nextPremium = !listing.isPremium;
     if (isSupabaseConfigured) {
-      await createSupabaseBrowserClient().from("listings").update({ is_premium: !listing.isPremium }).eq("id", listing.id).eq("owner_id", accountId);
+      const { error } = await createSupabaseBrowserClient().from("listings").update({ is_premium: nextPremium }).eq("id", listing.id).eq("seller_id", accountId);
+      if (error) return;
     }
+    setItems((current) => current.map((item) => item.id === listing.id ? { ...item, isPremium: nextPremium } : item));
   }
 
   function content() {
