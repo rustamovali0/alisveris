@@ -110,6 +110,7 @@ export function ListingWizard() {
   const [imageError, setImageError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [contactMethods, setContactMethods] = useState(["phone", "message", "whatsapp"]);
 
   const form = useForm<ListingDraftInput>({
     resolver: zodResolver(listingDraftSchema),
@@ -328,6 +329,22 @@ export function ListingWizard() {
     setStep((current) => Math.min(steps.length - 1, current + 1));
   }
 
+  function goBack() {
+    if (step === 0) {
+      router.back();
+      return;
+    }
+    setStep((current) => Math.max(0, current - 1));
+  }
+
+  function toggleContactMethod(method: string) {
+    setContactMethods((current) =>
+      current.includes(method)
+        ? current.filter((item) => item !== method)
+        : [...current, method],
+    );
+  }
+
   if (!ready) return <Card className="min-h-72 animate-pulse" />;
 
   if (!account) {
@@ -443,6 +460,26 @@ export function ListingWizard() {
             <label><span className="text-sm font-bold">Telefon</span><Input className="mt-2" {...form.register("phone")} /><ErrorText>{form.formState.errors.phone?.message}</ErrorText></label>
             <label><span className="text-sm font-bold">E-poçt</span><Input className="mt-2" {...form.register("email")} /><ErrorText>{form.formState.errors.email?.message}</ErrorText></label>
             <label><span className="text-sm font-bold">WhatsApp</span><Input className="mt-2" {...form.register("whatsapp")} /><ErrorText>{form.formState.errors.whatsapp?.message}</ErrorText></label>
+            <div className="grid gap-2 md:col-span-2 md:grid-cols-3">
+              {[
+                ["phone", "Telefon"],
+                ["message", "Mesaj"],
+                ["whatsapp", "WhatsApp"],
+              ].map(([value, label]) => (
+                <label
+                  className="flex items-center gap-2 rounded-lg border border-border bg-card p-3 text-sm"
+                  key={value}
+                >
+                  <input
+                    checked={contactMethods.includes(value)}
+                    className="h-4 w-4 accent-primary"
+                    type="checkbox"
+                    onChange={() => toggleContactMethod(value)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
           </div>
         )}
 
@@ -464,7 +501,7 @@ export function ListingWizard() {
         {submitError && <div className="mt-5 rounded-lg border border-danger/30 bg-red-50 p-3 text-sm font-semibold text-danger">{submitError}</div>}
 
         <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-          <Button disabled={step === 0 || submitting} type="button" variant="secondary" onClick={() => setStep((current) => Math.max(0, current - 1))}><ChevronLeft className="h-4 w-4" />Geri</Button>
+          <Button disabled={submitting} type="button" variant="secondary" onClick={goBack}><ChevronLeft className="h-4 w-4" />Geri</Button>
           <Button disabled={step === steps.length - 1 || submitting} type="button" onClick={nextStep}>İrəli<ChevronRight className="h-4 w-4" /></Button>
         </div>
       </Card>

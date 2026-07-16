@@ -50,7 +50,7 @@ type AccountContextValue = {
 };
 
 const profilesKey = "alisveris-safe-profiles-v1";
-export const accountSessionKey = "alisveris-demo-session-v1";
+export const accountSessionKey = "alisveris-account-session-v1";
 const accountChangedEvent = "alisveris-account-changed";
 
 const AccountContext = createContext<AccountContextValue | null>(null);

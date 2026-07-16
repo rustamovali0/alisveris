@@ -6,6 +6,7 @@ export type AdminListingItem = {
   city: string;
   price: number;
   status: string;
+  sellerId?: string;
 };
 
 export type AdminUserItem = {
@@ -118,6 +119,7 @@ export async function loadAdminSnapshot(): Promise<AdminSnapshot | null> {
       city: "Azərbaycan",
       price: Number(row.price) || 0,
       status: text(row.status, "pending"),
+      sellerId: text(row.seller_id),
     })),
     users: profileRows.map((row) => {
       const id = text(row.id);

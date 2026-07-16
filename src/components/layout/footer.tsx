@@ -1,20 +1,48 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, Music2, Share2, Smartphone, type LucideIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Share2, Smartphone } from "lucide-react";
+import { useEffect, useState, type ComponentType } from "react";
 import { Button } from "@/components/ui/button";
 import {
   defaultSiteSettings,
   readSiteSettings,
   siteSettingsChangedEvent,
+  syncSiteSettingsFromCloud,
   type FooterSocialKey,
   type SiteSettings,
 } from "@/lib/site-settings";
 
-const socialIcons: Record<FooterSocialKey, { label: string; icon: LucideIcon }> = {
-  instagram: { label: "Instagram", icon: Camera },
-  tiktok: { label: "TikTok", icon: Music2 },
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
+      <rect height="16" rx="5" stroke="currentColor" strokeWidth="2" width="16" x="4" y="4" />
+      <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="2" />
+      <circle cx="17.2" cy="6.8" fill="currentColor" r="1.1" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" className={className} fill="none" viewBox="0 0 24 24">
+      <path
+        d="M14 4v10.2a4.8 4.8 0 1 1-4.8-4.8c.5 0 1 .08 1.45.22v3.02a2.05 2.05 0 1 0 1.35 1.93V4h2Z"
+        fill="currentColor"
+      />
+      <path
+        d="M14 4c.5 2.9 2.08 4.6 5 4.95v2.78c-1.88-.08-3.56-.72-5-1.9V4Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+type SocialIcon = ComponentType<{ className?: string }>;
+
+const socialIcons: Record<FooterSocialKey, { label: string; icon: SocialIcon }> = {
+  instagram: { label: "Instagram", icon: InstagramIcon },
+  tiktok: { label: "TikTok", icon: TikTokIcon },
   share: { label: "Paylaş", icon: Share2 },
 };
 
@@ -23,6 +51,7 @@ export function Footer() {
 
   useEffect(() => {
     setSettings(readSiteSettings());
+    void syncSiteSettingsFromCloud().then(setSettings).catch(() => undefined);
 
     function handleSettingsChange(event: Event) {
       setSettings((event as CustomEvent<SiteSettings>).detail ?? readSiteSettings());

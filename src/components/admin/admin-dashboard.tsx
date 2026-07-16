@@ -36,7 +36,6 @@ import {
   createAdminCategory,
   loadAdminSnapshot,
   saveCloudSiteSettings,
-  setAdminUserRole,
   updateAdminListing,
   updateAdminStore,
   updateAdminTransaction,
@@ -68,6 +67,7 @@ const initialAdminListings: AdminListingItem[] = listings.slice(0, 6).map((listi
   city: listing.city,
   price: listing.price,
   status: "pending",
+  sellerId: "usr-1",
 }));
 
 const initialUsers = [
@@ -123,6 +123,7 @@ export function AdminDashboard() {
     () => Object.fromEntries(initialAdminListings.map((listing) => [listing.id, "Gözləmədə"])),
   );
   const [users, setUsers] = useState(initialUsers);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [categoryCount, setCategoryCount] = useState(15);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -171,7 +172,6 @@ export function AdminDashboard() {
         setAdminStores(snapshot.stores);
         setTransactions(snapshot.transactions);
         setCategoryCount(snapshot.categoryCount);
-        setNotice("Supabase məlumatları yükləndi");
       })
       .catch((error: unknown) => {
         setNotice(`Məlumatlar yüklənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
@@ -190,9 +190,18 @@ export function AdminDashboard() {
       .filter((listing) => !lowered || listing.title.toLowerCase().includes(lowered));
   }, [adminListings, query]);
 
+  const selectedUser = useMemo(
+    () => users.find((user) => user.id === selectedUserId) ?? null,
+    [selectedUserId, users],
+  );
+
+  const selectedUserListings = useMemo(
+    () => adminListings.filter((listing) => listing.sellerId === selectedUserId),
+    [adminListings, selectedUserId],
+  );
+
   function setSection(section: AdminSection) {
     setActiveSection(section);
-    setNotice(`${section} bölməsi açıldı`);
   }
 
   async function updateReviewStatus(id: string, status: ListingReviewStatus) {
@@ -211,25 +220,6 @@ export function AdminDashboard() {
     setNotice(`Elan baxışı açıldı: ${listing?.title ?? id}`);
   }
 
-  async function changeUserRole(id: string) {
-    const user = users.find((item) => item.id === id);
-    if (!user) return;
-    const nextRole = user.role === "admin" ? "user" : "admin";
-    setUsers((current) =>
-      current.map((user) =>
-        user.id === id
-          ? { ...user, role: nextRole }
-          : user,
-      ),
-    );
-    try {
-      await setAdminUserRole(id, nextRole);
-      setNotice("İstifadəçi rolu dəyişdirildi");
-    } catch (error) {
-      setNotice(`Rol dəyişmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
-    }
-  }
-
   async function toggleUserBlock(id: string) {
     const user = users.find((item) => item.id === id);
     if (!user) return;
@@ -246,28 +236,6 @@ export function AdminDashboard() {
       setNotice("İstifadəçi statusu yeniləndi");
     } catch (error) {
       setNotice(`Status yenilənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
-    }
-  }
-
-  async function changeAccountType(id: string) {
-    const user = users.find((item) => item.id === id);
-    if (!user) return;
-    const nextType = user.accountType === "store" ? "individual" : "store";
-    setUsers((current) =>
-      current.map((user) =>
-        user.id === id
-          ? {
-              ...user,
-              accountType: nextType,
-            }
-          : user,
-      ),
-    );
-    try {
-      await updateAdminUser(id, { account_type: nextType });
-      setNotice("İstifadəçi hesab tipi admin tərəfindən dəyişdirildi");
-    } catch (error) {
-      setNotice(`Hesab tipi dəyişmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
     }
   }
 
@@ -486,20 +454,28 @@ export function AdminDashboard() {
               <h2 className="text-xl font-black">İstifadəçilər</h2>
               <div className="mt-4 space-y-3">
                 {users.map((user) => (
-                  <div className="grid gap-3 rounded-lg bg-slate-900 p-3 md:grid-cols-[1fr_auto]" key={user.id}>
-                    <div>
+                  <div
+                    className={`grid gap-3 rounded-lg border p-3 md:grid-cols-[1fr_auto] ${
+                      selectedUserId === user.id
+                        ? "border-primary bg-primary/10"
+                        : "border-transparent bg-slate-900"
+                    }`}
+                    key={user.id}
+                  >
+                    <button
+                      className="text-left"
+                      type="button"
+                      onClick={() => setSelectedUserId(user.id)}
+                    >
                       <p className="font-bold">{user.name}</p>
                       <p className="text-sm text-slate-300">
-                        {user.role} · {user.accountType === "store" ? "Mağaza" : "Fərdi"} · {user.ads}
+                        {user.accountType === "store" ? "Mağaza" : "Fərdi"} · {user.ads}
                       </p>
-                    </div>
+                    </button>
                     <div className="flex flex-wrap gap-2">
                       <Badge tone={user.status === "aktiv" ? "green" : "red"}>{user.status}</Badge>
-                      <Button data-testid={`role-${user.id}`} size="sm" type="button" variant="secondary" onClick={() => changeUserRole(user.id)}>
-                        Role dəyiş
-                      </Button>
-                      <Button data-testid={`account-type-${user.id}`} size="sm" type="button" variant="secondary" onClick={() => changeAccountType(user.id)}>
-                        Hesab tipini dəyiş
+                      <Button data-testid={`user-listings-${user.id}`} size="sm" type="button" variant="secondary" onClick={() => setSelectedUserId(user.id)}>
+                        Elanlarına bax
                       </Button>
                       <Button data-testid={`block-${user.id}`} size="sm" type="button" variant="danger" onClick={() => toggleUserBlock(user.id)}>
                         {user.status === "aktiv" ? "Blokla" : "Aktiv et"}
@@ -508,6 +484,50 @@ export function AdminDashboard() {
                   </div>
                 ))}
               </div>
+              {selectedUser ? (
+                <div className="mt-5 rounded-lg border border-white/10 bg-slate-950 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-black">{selectedUser.name} elanları</h3>
+                      <p className="text-sm text-slate-300">
+                        İstifadəçinin yerləşdirdiyi elanları buradan təsdiqləyin, rədd edin və ya baxın.
+                      </p>
+                    </div>
+                    <Button size="sm" type="button" variant="secondary" onClick={() => setSelectedUserId(null)}>
+                      Bağla
+                    </Button>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {selectedUserListings.length ? (
+                      selectedUserListings.map((listing) => (
+                        <div className="grid gap-3 rounded-lg bg-slate-900 p-3 md:grid-cols-[1fr_auto]" key={listing.id}>
+                          <div>
+                            <p className="font-bold">{listing.title}</p>
+                            <p className="text-sm text-slate-300">
+                              {listing.city} · {formatCurrency(listing.price)} · {listing.status}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" type="button" variant="secondary" onClick={() => openListing(listing.id)}>
+                              Bax
+                            </Button>
+                            <Button size="sm" type="button" onClick={() => updateReviewStatus(listing.id, "Təsdiqləndi")}>
+                              Təsdiqlə
+                            </Button>
+                            <Button size="sm" type="button" variant="danger" onClick={() => updateReviewStatus(listing.id, "Rədd edildi")}>
+                              Rədd et
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="rounded-lg bg-slate-900 p-3 text-sm text-slate-300">
+                        Bu istifadəçinin elanı yoxdur.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : null}
             </Card>
           ) : null}
 
