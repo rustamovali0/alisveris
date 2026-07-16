@@ -283,7 +283,7 @@ export function ListingWizard() {
           is_vip: parsed.data.package === "vip",
           delivery_available: parsed.data.delivery,
           phone: parsed.data.phone.trim(),
-          whatsapp: parsed.data.whatsapp.trim() || null,
+          whatsapp: parsed.data.whatsapp?.trim() || null,
           address: [parsed.data.city, parsed.data.district, parsed.data.address]
             .filter(Boolean)
             .join(", "),

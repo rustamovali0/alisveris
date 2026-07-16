@@ -42,6 +42,7 @@ function normalizeListing(row: Record<string, unknown>): ProfileListing {
   return {
     id: String(row.id),
     slug: String(row.slug ?? row.id),
+    listingNumber: String(row.listing_number ?? row.listingNumber ?? row.id).replace(/\D/g, "").slice(-8) || "00000000",
     title: String(row.title ?? "Adsız elan"),
     price: Number(row.price ?? 0),
     currency: "AZN",
