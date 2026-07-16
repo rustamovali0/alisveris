@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MessageCircle, Phone, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { incrementListingContactCount } from "@/components/listings/listing-live-stats";
 
 type ContactActionsProps = {
   phone: string;
@@ -12,6 +13,10 @@ type ContactActionsProps = {
 
 function maskPhone(phone: string) {
   return `${phone.slice(0, 3)} XXX XX XX`;
+}
+
+function cleanPhone(phone: string) {
+  return phone.replace(/[^\d+]/g, "");
 }
 
 export function ContactActions({
@@ -24,7 +29,11 @@ export function ContactActions({
 
   function revealPhone() {
     setVisible(true);
+    incrementListingContactCount(listingId);
     console.info("listing_contact_revealed", { listingId, channel: "phone" });
+    window.setTimeout(() => {
+      window.location.href = `tel:${cleanPhone(phone)}`;
+    }, 80);
   }
 
   return (
@@ -78,7 +87,11 @@ export function MobileContactBar({ phone, whatsapp, listingId }: ContactActionsP
         type="button"
         onClick={() => {
           setVisible(true);
+          incrementListingContactCount(listingId);
           console.info("listing_contact_revealed", { listingId, channel: "phone" });
+          window.setTimeout(() => {
+            window.location.href = `tel:${cleanPhone(phone)}`;
+          }, 80);
         }}
       >
         <Phone className="h-4 w-4" />

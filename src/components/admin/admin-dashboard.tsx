@@ -5,14 +5,12 @@ import {
   Activity,
   BadgeDollarSign,
   Ban,
-  CheckCircle2,
   Download,
   Eye,
   FileText,
   Flag,
   LayoutDashboard,
   MessageSquare,
-  RefreshCw,
   Search,
   Settings,
   ShieldCheck,
@@ -118,8 +116,6 @@ const socialOptions: { key: FooterSocialKey; label: string }[] = [
 
 export function AdminDashboard() {
   const [activeSection, setActiveSection] = useState<AdminSection>("Dashboard");
-  const [notice, setNotice] = useState("Admin panel hazırdır");
-  const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [adminListings, setAdminListings] = useState(initialAdminListings);
   const [selectedListing, setSelectedListing] = useState<string | null>(null);
@@ -148,12 +144,13 @@ export function AdminDashboard() {
   const [cmsDraft, setCmsDraft] = useState("CMS səhifəsi seçilməyib");
   const [cmsPage, setCmsPage] = useState<string | null>(null);
   const [cmsContent, setCmsContent] = useState("");
-  const [commandOpen, setCommandOpen] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => readSiteSettings());
+  function setNotice(message: string) {
+    void message;
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     loadAdminSnapshot()
       .then((snapshot) => {
         if (!snapshot || cancelled) return;
@@ -180,7 +177,7 @@ export function AdminDashboard() {
         setNotice(`Məlumatlar yüklənmədi: ${error instanceof Error ? error.message : "naməlum xəta"}`);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) return;
       });
     return () => {
       cancelled = true;
@@ -443,22 +440,7 @@ export function AdminDashboard() {
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-3xl font-black">{activeSection}</h1>
-              <p className="mt-2 text-slate-300">
-                Moderasiya, ödəniş, mağaza, audit log və CMS idarəetməsi.
-              </p>
             </div>
-            <Button type="button" onClick={() => setCommandOpen(true)}>
-              Yeni admin əməliyyatı
-            </Button>
-          </div>
-
-          <div
-            className="mb-5 flex items-center gap-2 rounded-lg border border-green-400/30 bg-green-400/10 p-3 text-sm font-semibold text-green-100"
-            data-testid="admin-notice"
-          >
-            <CheckCircle2 className="h-4 w-4 text-green-300" />
-            {notice}
-            {loading ? <RefreshCw className="ml-auto h-4 w-4 animate-spin" /> : null}
           </div>
 
           {activeSection === "Dashboard" ? (
@@ -902,17 +884,43 @@ export function AdminDashboard() {
                       <span className="text-sm font-semibold">Footer linkləri</span>
                       <textarea
                         className="mt-1 min-h-24 w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none focus:border-primary"
-                        value={siteSettings.footer.links.join("\n")}
+                        value={siteSettings.footer.links
+                          .map((link) => [link.label, link.href, link.content ?? ""].join(" | "))
+                          .join("\n")}
                         onChange={(event) =>
                           updateFooterField(
                             "links",
                             event.target.value
                               .split("\n")
-                              .map((item) => item.trim())
-                              .filter(Boolean),
+                              .map((item) => {
+                                const [label = "", href = "", content = ""] = item
+                                  .split("|")
+                                  .map((part) => part.trim());
+                                const slug = label
+                                  .toLowerCase()
+                                  .replaceAll("ə", "e")
+                                  .replaceAll("ı", "i")
+                                  .replaceAll("ö", "o")
+                                  .replaceAll("ü", "u")
+                                  .replaceAll("ş", "s")
+                                  .replaceAll("ğ", "g")
+                                  .replaceAll("ç", "c")
+                                  .replace(/[^a-z0-9]+/g, "-")
+                                  .replace(/^-|-$/g, "");
+
+                                return {
+                                  label,
+                                  href: href || `/sehife/${slug}`,
+                                  content,
+                                };
+                              })
+                              .filter((item) => item.label),
                           )
                         }
                       />
+                      <p className="mt-1 text-xs text-slate-400">
+                        Hər sətr: Başlıq | /sehife/link | Səhifə mətni
+                      </p>
                     </label>
                     <label>
                       <span className="text-sm font-semibold">Copyright</span>
@@ -999,28 +1007,6 @@ export function AdminDashboard() {
           ) : null}
         </main>
       </div>
-
-      {commandOpen ? (
-        <AdminModal title="Yeni admin əməliyyatı" onClose={() => setCommandOpen(false)}>
-          <p className="text-sm text-slate-300">İdarə etmək istədiyiniz bölməni seçin.</p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {adminNav.slice(1).map(([label, Icon]) => (
-              <button
-                className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-900 p-3 text-left font-semibold hover:border-primary"
-                key={label}
-                type="button"
-                onClick={() => {
-                  setSection(label);
-                  setCommandOpen(false);
-                }}
-              >
-                <Icon className="h-4 w-4 text-primary" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </AdminModal>
-      ) : null}
 
       {categoryDialogOpen ? (
         <AdminModal title="Yeni kateqoriya" onClose={() => setCategoryDialogOpen(false)}>

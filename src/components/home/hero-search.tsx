@@ -79,7 +79,7 @@ export function HeroSearch() {
             {[
               ["42k+", "aktiv elan"],
               ["5k+", "təsdiqli mağaza"],
-              ["99.9%", "RLS qoruması"],
+              ["99.9%", "təhlükəsiz əməliyyat"],
             ].map(([value, label]) => (
               <div className="rounded-lg border border-border bg-background p-3" key={label}>
                 <p className="text-2xl font-black">{value}</p>

@@ -24,13 +24,20 @@ export type SiteTheme = {
 
 export type FooterSocialKey = "instagram" | "tiktok" | "share";
 
+export type FooterLink = {
+  label: string;
+  href: string;
+  content: string;
+};
+
 export type FooterSettings = {
   brand: string;
   description: string;
   appLabel: string;
-  links: string[];
+  links: FooterLink[];
   socials: FooterSocialKey[];
   copyright: string;
+  disclaimer: string;
 };
 
 export type AdBannerSettings = {
@@ -52,6 +59,10 @@ export type SiteSettings = {
     browserTitle: string;
     logoUrl: string;
     faviconUrl: string;
+  };
+  home: {
+    heroImageUrl: string;
+    safetyLabel: string;
   };
   footer: FooterSettings;
   ads: {
@@ -129,18 +140,101 @@ export const defaultFooterSettings: FooterSettings = {
     "Azərbaycan üçün təhlükəsiz, sürətli və müasir elan platforması. Fərdi satıcılar, mağazalar və biznes hesabları üçün vahid bazar.",
   appLabel: "Tezliklə",
   links: [
-    "Haqqımızda",
-    "Əlaqə",
-    "İstifadə qaydaları",
-    "Məxfilik siyasəti",
-    "Təhlükəsizlik",
-    "Reklam",
-    "Mağaza hesabı",
-    "Dəstək",
-    "Tez-tez verilən suallar",
+    {
+      label: "Top 10 sual",
+      href: "/sehife/top-10-sual",
+      content:
+        "Ən çox verilən suallar: elan yerləşdirmə, düzəliş, silmə, bərpa, elan nömrəsi, mağaza hesabı və ödənişli xidmətlər.",
+    },
+    {
+      label: "İstifadəçi razılaşması",
+      href: "/sehife/istifadeci-razilasmasi",
+      content:
+        "Bu səhifədə platformadan istifadə, elan yerləşdirmə, məsuliyyət, mesajlaşma və hesab qaydaları göstərilir.",
+    },
+    {
+      label: "İctimai oferta",
+      href: "/sehife/ictimai-oferta",
+      content:
+        "İctimai oferta ödənişli xidmətlərin, paketlərin və platforma xidmətlərinin ümumi şərtlərini müəyyən edir.",
+    },
+    {
+      label: "Kateqoriyalar üzrə limitlər",
+      href: "/sehife/kateqoriyalar-uzre-limitler",
+      content:
+        "Hər kateqoriya üzrə 30 günlük elan limitləri və limit dolduqda istifadə oluna bilən xidmətlər burada idarə olunur.",
+    },
+    {
+      label: "Ödənişli xidmətlər",
+      href: "/sehife/odenisli-xidmetler",
+      content:
+        "Premium, VIP və irəli çək xidmətləri elanların daha çox görünməsi üçün nəzərdə tutulub.",
+    },
+    {
+      label: "Paketlər",
+      href: "/sehife/paketler",
+      content:
+        "Mağaza və aktiv satıcılar üçün elan paketləri, limitlər və bonuslar admin panelindən idarə olunur.",
+    },
+    {
+      label: "Haqqımızda",
+      href: "/sehife/haqqimizda",
+      content:
+        "alışveriş.az fərdi satıcılar, mağazalar və alıcılar üçün təhlükəsiz elan platformasıdır.",
+    },
+    {
+      label: "Əlaqə",
+      href: "/sehife/elaqe",
+      content:
+        "Bizimlə əlaqə üçün dəstək forması, e-poçt və sosial kanallardan istifadə edə bilərsiniz.",
+    },
+    {
+      label: "İstifadə qaydaları",
+      href: "/sehife/istifade-qaydalari",
+      content:
+        "Elan yerləşdirərkən düzgün kateqoriya, real şəkil və dəqiq əlaqə məlumatı qeyd olunmalıdır.",
+    },
+    {
+      label: "Məxfilik siyasəti",
+      href: "/sehife/mexfilik-siyaseti",
+      content:
+        "İstifadəçi məlumatları yalnız platformanın təhlükəsiz işləməsi və hesab idarəetməsi üçün istifadə olunur.",
+    },
+    {
+      label: "Təhlükəsizlik",
+      href: "/sehife/tehlukesizlik",
+      content:
+        "Ödəniş etməzdən əvvəl məhsulu yoxlayın, şübhəli hesabları və elanları moderasiyaya bildirin.",
+    },
+    {
+      label: "Reklam",
+      href: "/sehife/reklam",
+      content:
+        "Banner, premium, VIP və irəli çək xidmətləri admin panelindən idarə olunur.",
+    },
+    {
+      label: "Mağaza hesabı",
+      href: "/sehife/magaza-hesabi",
+      content:
+        "Mağaza hesabı yaratmaqla məhsulları vahid vitrin altında idarə edə bilərsiniz.",
+    },
+    {
+      label: "Dəstək",
+      href: "/sehife/destek",
+      content:
+        "Dəstək komandası elan, hesab, ödəniş və təhlükəsizlik mövzularında kömək edir.",
+    },
+    {
+      label: "Tez-tez verilən suallar",
+      href: "/sehife/faq",
+      content:
+        "Ən çox verilən suallar: elan yerləşdirmə, mağaza hesabı, premium xidmətlər və təhlükəsiz alış-veriş.",
+    },
   ],
   socials: ["instagram", "tiktok", "share"],
   copyright: "© 2026 alışveriş.az. Bütün hüquqlar qorunur.",
+  disclaimer:
+    "Saytın Administrasiyası reklam bannerlərinin və yerləşdirilmiş elanların məzmununa görə məsuliyyət daşımır.",
 };
 
 export const defaultSiteSettings: SiteSettings = {
@@ -151,6 +245,11 @@ export const defaultSiteSettings: SiteSettings = {
     browserTitle: "alışveriş.az - Al, sat və axtardığını tap",
     logoUrl: "",
     faviconUrl: "",
+  },
+  home: {
+    heroImageUrl:
+      "https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&fit=crop&w=1200&q=85",
+    safetyLabel: "təhlükəsiz əməliyyat",
   },
   footer: defaultFooterSettings,
   ads: {
@@ -178,18 +277,50 @@ export const defaultSiteSettings: SiteSettings = {
 };
 
 function normalizeSiteSettings(parsed: Partial<SiteSettings>): SiteSettings {
+  const parsedFooterLinks = parsed.footer?.links as Array<FooterLink | string> | undefined;
+  const footerLinks =
+    Array.isArray(parsedFooterLinks) && parsedFooterLinks.length
+      ? parsedFooterLinks.map((link) =>
+          typeof link === "string"
+            ? {
+                label: link,
+                href: `/sehife/${link
+                  .toLocaleLowerCase("az")
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/ə/g, "e")
+                  .replace(/ı/g, "i")
+                  .replace(/ş/g, "s")
+                  .replace(/ç/g, "c")
+                  .replace(/ö/g, "o")
+                  .replace(/ü/g, "u")
+                  .replace(/ğ/g, "g")
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-|-$/g, "")}`,
+                content: `${link} səhifəsinin məzmunu admin panelindən idarə olunur.`,
+              }
+            : {
+                label: link.label,
+                href: link.href || "#",
+                content: link.content || `${link.label} səhifəsinin məzmunu admin panelindən idarə olunur.`,
+              },
+        )
+      : defaultFooterSettings.links;
+
   return {
     theme: parsed.theme ?? defaultSiteSettings.theme,
     identity: {
       ...defaultSiteSettings.identity,
       ...parsed.identity,
     },
+    home: {
+      ...defaultSiteSettings.home,
+      ...parsed.home,
+    },
     footer: {
       ...defaultFooterSettings,
       ...parsed.footer,
-      links: parsed.footer?.links?.length
-        ? parsed.footer.links
-        : defaultFooterSettings.links,
+      links: footerLinks,
       socials: parsed.footer?.socials?.length
         ? parsed.footer.socials
         : defaultFooterSettings.socials,

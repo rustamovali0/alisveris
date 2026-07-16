@@ -29,6 +29,7 @@ export type CategoryTreeNode = {
 
 export type Listing = {
   id: string;
+  listingNumber: string;
   slug: string;
   title: string;
   price: number;
@@ -40,6 +41,7 @@ export type Listing = {
   subcategory: string;
   condition: ListingCondition;
   sellerType: SellerType;
+  sellerId?: string;
   sellerName: string;
   storeName?: string;
   isPremium: boolean;

@@ -58,10 +58,10 @@ export function Footer() {
           {footer.links.map((link) => (
             <Link
               className="text-sm text-muted transition hover:text-primary"
-              href="#"
-              key={link}
+              href={link.href}
+              key={link.href}
             >
-              {link}
+              {link.label}
             </Link>
           ))}
         </div>
@@ -93,7 +93,8 @@ export function Footer() {
       </div>
       <div className="border-t border-border py-4">
         <div className="container-shell text-sm text-muted">
-          {footer.copyright}
+          <p>{footer.copyright}</p>
+          <p className="mt-2 text-xs leading-5">{footer.disclaimer}</p>
         </div>
       </div>
     </footer>

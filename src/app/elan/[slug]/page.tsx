@@ -6,7 +6,6 @@ import {
   BarChart3,
   Calendar,
   ChevronRight,
-  Eye,
   Heart,
   MapPin,
   ShieldCheck,
@@ -19,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { ContactActions, MobileContactBar } from "@/components/listings/contact-actions";
 import { ListingGallery } from "@/components/listings/listing-gallery";
 import { ListingCard } from "@/components/listings/listing-card";
+import { ListingLiveStats } from "@/components/listings/listing-live-stats";
 import { PromotionPanel } from "@/components/listings/promotion-panel";
 import { SiteShell } from "@/components/layout/site-shell";
 import { listings, sellerRatingSummary } from "@/lib/mock-data";
@@ -63,6 +63,11 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
   const related = listings
     .filter((item) => item.category === listing.category && item.id !== listing.id)
     .slice(0, 4);
+  const sellerOtherListings = listing.sellerId
+    ? listings
+        .filter((item) => item.sellerId === listing.sellerId && item.id !== listing.id)
+        .slice(0, 4)
+    : [];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -124,13 +129,10 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                   <Calendar className="h-4 w-4" />
                   {formatDate(listing.date)}
                 </span>
-                <span className="inline-flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  {listing.views} baxış
-                </span>
+                <ListingLiveStats listingId={listing.id} baseViews={listing.views} />
                 <span className="inline-flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
-                  Elan № {listing.id.replace("lst-", "")}
+                  Elan № {listing.listingNumber}
                 </span>
               </div>
             </Card>
@@ -157,8 +159,16 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 {listing.city}, {listing.district}. Dəqiq ünvan satıcı ilə əlaqədən
                 sonra paylaşılır.
               </p>
-              <div className="mt-4 grid h-56 place-items-center rounded-lg border border-dashed border-border bg-background text-sm text-muted">
-                Xəritə inteqrasiyası üçün hazır placeholder
+              <div className="mt-4 grid h-56 place-items-center rounded-lg border border-dashed border-border bg-[radial-gradient(circle_at_center,rgba(124,58,237,0.14),transparent_45%),linear-gradient(135deg,rgba(148,163,184,0.16),rgba(248,250,252,0.8))] p-4 text-sm text-muted">
+                <div className="max-w-sm rounded-lg border border-border bg-card/95 p-4 text-center shadow-sm">
+                  <MapPin className="mx-auto mb-2 h-6 w-6 text-primary" />
+                  <p className="font-black text-foreground">
+                    {listing.city}, {listing.district}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    Satıcı xəritədə nöqtə seçməyib. Qeyd olunan ünvan əsas götürülür.
+                  </p>
+                </div>
               </div>
             </Card>
 
@@ -169,12 +179,34 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                   Daha çox
                 </Link>
               </div>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                {(related.length ? related : listings.slice(0, 4)).map((item) => (
-                  <ListingCard compact key={item.id} listing={item} />
-                ))}
-              </div>
+              {related.length ? (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {related.map((item) => (
+                    <ListingCard compact key={item.id} listing={item} />
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-lg bg-background p-4 text-sm text-muted">
+                  Bu kateqoriyada başqa elan yoxdur.
+                </p>
+              )}
             </Card>
+
+            {sellerOtherListings.length ? (
+              <Card className="p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-xl font-black">İstifadəçinin digər elanları</h2>
+                  <Link className="text-sm font-semibold text-primary" href="/elanlar">
+                    Daha çox
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {sellerOtherListings.map((item) => (
+                    <ListingCard compact key={item.id} listing={item} />
+                  ))}
+                </div>
+              </Card>
+            ) : null}
           </section>
 
           <aside className="space-y-4">
@@ -231,7 +263,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 </Button>
               </div>
             </Card>
-            <PromotionPanel listingId={listing.id} />
+            <PromotionPanel listingId={listing.id} ownerId={listing.sellerId} />
           </aside>
         </div>
       </div>

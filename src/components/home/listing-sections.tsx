@@ -1,10 +1,23 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ListingCard } from "@/components/listings/listing-card";
 import { listings, premiumListings, stores } from "@/lib/mock-data";
+import type { Listing } from "@/types/marketplace";
+
+function rankingScore(listing: Listing) {
+  return (
+    (listing.isVip ? 300_000 : 0) +
+    (listing.isPremium ? 200_000 : 0) +
+    listing.views +
+    listing.favorites * 5
+  );
+}
 
 export function PremiumListings() {
   return (
@@ -38,25 +51,80 @@ export function PremiumListings() {
   );
 }
 
+export function VipListings() {
+  const vipListings = listings.filter((listing) => listing.isVip);
+
+  if (!vipListings.length) return null;
+
+  return (
+    <section className="container-shell py-5 md:py-10">
+      <div className="mb-5 flex items-end justify-between">
+        <div>
+          <Badge tone="purple">VIP elanlar</Badge>
+          <h2 className="mt-2 text-2xl font-black">Seçilən elanlar</h2>
+        </div>
+        <Button asChild variant="secondary">
+          <Link href="/elanlar?vip=true">Hamısı</Link>
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {vipListings.slice(0, 4).map((listing) => (
+          <ListingCard listing={listing} key={`vip-${listing.id}`} compact />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function LatestListings() {
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(10);
+  const orderedListings = useMemo(
+    () => [...listings].sort((a, b) => rankingScore(b) - rankingScore(a)),
+    [],
+  );
+  const visibleListings = useMemo(() => {
+    const repeated = Array.from({ length: Math.ceil(visibleCount / orderedListings.length) }, () =>
+      orderedListings,
+    ).flat();
+
+    return repeated.slice(0, visibleCount);
+  }, [orderedListings, visibleCount]);
+
+  useEffect(() => {
+    const target = sentinelRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((current) => Math.min(current + 10, 80));
+        }
+      },
+      { rootMargin: "600px" },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="container-shell py-6 md:py-10">
       <div className="mb-5 flex items-end justify-between">
         <div>
-          <h2 className="text-2xl font-black">Son elanlar</h2>
-          <p className="mt-1 text-sm text-muted">
-            Desktopda 5, tabletdə 3, mobil cihazlarda 2 sütun.
-          </p>
+          <h2 className="text-2xl font-black">Bütün elanlar</h2>
+          <p className="mt-1 text-sm text-muted">İrəli çəkilənlər və ən çox baxılanlar yuxarıda görünür.</p>
         </div>
         <Button asChild variant="secondary">
           <Link href="/elanlar">Daha çox bax</Link>
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-        {listings.map((listing) => (
-          <ListingCard listing={listing} key={listing.id} />
+        {visibleListings.map((listing, index) => (
+          <ListingCard listing={listing} key={`${listing.id}-${index}`} />
         ))}
       </div>
+      <div ref={sentinelRef} className="h-10" aria-hidden="true" />
     </section>
   );
 }

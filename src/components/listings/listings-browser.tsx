@@ -7,6 +7,7 @@ import { Filter, Grid2X2, List, Search, SlidersHorizontal, X } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { ListingCard } from "@/components/listings/listing-card";
 import { categoryTree, cities, listings } from "@/lib/mock-data";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -18,6 +19,11 @@ const sortOptions = [
   "Ən bahalı",
   "Ən çox baxılan",
   "Premium elanlar",
+];
+
+const cityOptions = [
+  { label: "Bütün şəhərlər", value: "" },
+  ...cities.map((city) => ({ label: city, value: city })),
 ];
 
 const flags = [
@@ -101,63 +107,54 @@ function FilterPanel({ filters, setFilter, toggleFlag }: FilterPanelProps) {
         <label className="text-sm font-bold" htmlFor="category-filter">
           Kateqoriya
         </label>
-        <select
-          className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-          id="category-filter"
+        <CustomSelect
+          ariaLabel="Kateqoriya"
+          buttonClassName="mt-2 h-11 w-full"
+          options={[
+            { label: "Bütün kateqoriyalar", value: "" },
+            ...categoryTree.map((category) => ({ label: category.name, value: category.name })),
+          ]}
           value={filters.category}
-          onChange={(event) => {
-            setFilter("category", event.target.value);
+          onChange={(value) => {
+            setFilter("category", value);
             setFilter("subcategory", "");
             setFilter("childCategory", "");
           }}
-        >
-          <option value="">Bütün kateqoriyalar</option>
-          {categoryTree.map((category) => (
-            <option key={category.id} value={category.name}>
-              {category.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       <div>
         <label className="text-sm font-bold" htmlFor="subcategory-filter">
           Alt kateqoriya
         </label>
-        <select
-          className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-          id="subcategory-filter"
+        <CustomSelect
+          ariaLabel="Alt kateqoriya"
+          buttonClassName="mt-2 h-11 w-full"
+          options={[
+            { label: "Hamısı", value: "" },
+            ...subcategories.map((subcategory) => ({ label: subcategory.name, value: subcategory.name })),
+          ]}
           value={filters.subcategory}
-          onChange={(event) => {
-            setFilter("subcategory", event.target.value);
+          onChange={(value) => {
+            setFilter("subcategory", value);
             setFilter("childCategory", "");
           }}
-        >
-          <option value="">Hamısı</option>
-          {subcategories.map((subcategory) => (
-            <option key={subcategory.id} value={subcategory.name}>
-              {subcategory.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
       {childCategories.length ? (
         <div>
           <label className="text-sm font-bold" htmlFor="child-category-filter">
             Daxili kateqoriya
           </label>
-          <select
-            className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-            id="child-category-filter"
+          <CustomSelect
+            ariaLabel="Daxili kateqoriya"
+            buttonClassName="mt-2 h-11 w-full"
+            options={[
+              { label: "Hamısı", value: "" },
+              ...childCategories.map((childCategory) => ({ label: childCategory.name, value: childCategory.name })),
+            ]}
             value={filters.childCategory}
-            onChange={(event) => setFilter("childCategory", event.target.value)}
-          >
-            <option value="">Hamısı</option>
-            {childCategories.map((childCategory) => (
-              <option key={childCategory.id} value={childCategory.name}>
-                {childCategory.name}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setFilter("childCategory", value)}
+          />
         </div>
       ) : null}
       <div>
@@ -181,17 +178,14 @@ function FilterPanel({ filters, setFilter, toggleFlag }: FilterPanelProps) {
         <label className="text-sm font-bold" htmlFor="city-filter">
           Şəhər və rayon
         </label>
-        <select
-          className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-          id="city-filter"
+        <CustomSelect
+          ariaLabel="Şəhər və rayon"
+          buttonClassName="mt-2 h-11 w-full"
+          menuClassName="max-h-72"
+          options={cityOptions}
           value={filters.city}
-          onChange={(event) => setFilter("city", event.target.value)}
-        >
-          <option value="">Bütün şəhərlər</option>
-          {cities.map((city) => (
-            <option key={city}>{city}</option>
-          ))}
-        </select>
+          onChange={(value) => setFilter("city", value)}
+        />
       </div>
       <div className="grid gap-2">
         {flags.map((item) => (
@@ -213,17 +207,18 @@ function FilterPanel({ filters, setFilter, toggleFlag }: FilterPanelProps) {
         <label className="text-sm font-bold" htmlFor="date-filter">
           Tarix
         </label>
-        <select
-          className="mt-2 h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
-          id="date-filter"
+        <CustomSelect
+          ariaLabel="Tarix"
+          buttonClassName="mt-2 h-11 w-full"
+          options={[
+            { label: "Bütün tarixlər", value: "" },
+            { label: "Bu gün", value: "Bu gün" },
+            { label: "Son 3 gün", value: "Son 3 gün" },
+            { label: "Son həftə", value: "Son həftə" },
+          ]}
           value={filters.dateRange}
-          onChange={(event) => setFilter("dateRange", event.target.value)}
-        >
-          <option value="">Bütün tarixlər</option>
-          <option>Bu gün</option>
-          <option>Son 3 gün</option>
-          <option>Son həftə</option>
-        </select>
+          onChange={(value) => setFilter("dateRange", value)}
+        />
       </div>
     </div>
   );
@@ -245,7 +240,7 @@ export function ListingsBrowser() {
     categoryNodes.find((category) => category.slug === childCategoryParam || category.name === childCategoryParam)
       ?.name ?? "";
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [sort, setSort] = useState(sortOptions[0]);
+  const [sort, setSort] = useState(searchParams.get("sort") === "views" ? "Ən çox baxılan" : sortOptions[0]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -360,6 +355,7 @@ export function ListingsBrowser() {
         listing.city,
         listing.sellerName,
         listing.storeName ?? "",
+        listing.listingNumber,
         ...Object.values(listing.attributes),
       ]
         .join(" ")
@@ -440,16 +436,14 @@ export function ListingsBrowser() {
               onChange={(event) => setFilter("query", event.target.value)}
             />
           </label>
-          <select
-            className="h-11 rounded-lg border border-border bg-card px-3 text-sm"
+          <CustomSelect
+            ariaLabel="Şəhər"
+            buttonClassName="h-11 w-full"
+            menuClassName="max-h-72"
+            options={cityOptions}
             value={filters.city}
-            onChange={(event) => setFilter("city", event.target.value)}
-          >
-            <option value="">Bütün şəhərlər</option>
-            {cities.map((city) => (
-              <option key={city}>{city}</option>
-            ))}
-          </select>
+            onChange={(value) => setFilter("city", value)}
+          />
           <Button type="button" onClick={() => setMobileFiltersOpen(true)}>
             Axtar
           </Button>
@@ -510,15 +504,13 @@ export function ListingsBrowser() {
                 <SlidersHorizontal className="h-4 w-4" />
                 Filter
               </Button>
-              <select
-                className="h-10 rounded-lg border border-border bg-card px-3 text-sm"
+              <CustomSelect
+                ariaLabel="Sıralama"
+                buttonClassName="h-10 min-w-40"
+                options={sortOptions.map((option) => ({ label: option, value: option }))}
                 value={sort}
-                onChange={(event) => setSort(event.target.value)}
-              >
-                {sortOptions.map((option) => (
-                  <option key={option}>{option}</option>
-                ))}
-              </select>
+                onChange={setSort}
+              />
               <div className="hidden rounded-lg border border-border bg-card p-1 sm:flex">
                 <Button
                   aria-label="Grid görünüş"

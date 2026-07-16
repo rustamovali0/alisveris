@@ -13,8 +13,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { CategoryMegaMenu } from "@/components/layout/category-mega-menu";
 import { cities } from "@/lib/mock-data";
+import { showSweetToast } from "@/lib/sweet-alert";
 import { useAccount } from "@/components/providers/account-provider";
 import {
   readSiteSettings,
@@ -25,6 +27,7 @@ import {
 export function Header() {
   const { account, ready } = useAccount();
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => readSiteSettings());
+  const [headerCity, setHeaderCity] = useState("Bakı");
 
   useEffect(() => {
     function syncSettings(event?: Event) {
@@ -70,7 +73,7 @@ export function Header() {
         <nav className="hidden items-center gap-1 lg:flex">
           <CategoryMegaMenu />
           <Button asChild variant="ghost">
-            <Link href="/elanlar?premium=true">Populyar</Link>
+            <Link href="/elanlar?sort=views">Populyar</Link>
           </Button>
         </nav>
         <form
@@ -87,18 +90,17 @@ export function Header() {
               type="search"
             />
           </div>
-          <label className="relative">
+          <label className="relative min-w-44">
             <span className="sr-only">Şəhər</span>
             <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-            <select
-              className="h-11 rounded-lg border border-border bg-card px-10 text-sm font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
-              name="city"
-              defaultValue="Bakı"
-            >
-              {cities.map((city) => (
-                <option key={city}>{city}</option>
-              ))}
-            </select>
+            <input name="city" type="hidden" value={headerCity} />
+            <CustomSelect
+              ariaLabel="Şəhər"
+              buttonClassName="h-11 min-w-44 pl-10 pr-8"
+              options={cities.map((city) => ({ label: city, value: city }))}
+              value={headerCity}
+              onChange={setHeaderCity}
+            />
           </label>
           <Button className="sr-only" type="submit">
             Axtar
@@ -116,7 +118,13 @@ export function Header() {
               <MessageCircle className="h-5 w-5" />
             </Link>
           </Button>
-          <Button aria-label="Bildirişlər" size="icon" type="button" variant="ghost">
+          <Button
+            aria-label="Bildirişlər"
+            size="icon"
+            type="button"
+            variant="ghost"
+            onClick={() => void showSweetToast("Yeni bildiriş yoxdur", "info")}
+          >
             <Bell className="h-5 w-5" />
           </Button>
           <Button asChild size="icon" variant="ghost">

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ArrowUp, Check, Crown, Gem, Rocket, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAccount } from "@/components/providers/account-provider";
+import { showSweetAlert } from "@/lib/sweet-alert";
 
 type PromotionType = "vip" | "premium" | "boost";
 
@@ -84,7 +86,8 @@ const paymentMethods = [
   "Terminallarda ödəniş",
 ];
 
-export function PromotionPanel({ listingId }: { listingId: string }) {
+export function PromotionPanel({ listingId, ownerId }: { listingId: string; ownerId?: string }) {
+  const { account, ready } = useAccount();
   const [selectedService, setSelectedService] = useState<PromotionService | null>(null);
   const [selectedPlan, setSelectedPlan] = useState("");
   const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
@@ -104,6 +107,10 @@ export function PromotionPanel({ listingId }: { listingId: string }) {
 
   const selectedPlanDetails = selectedService?.plans.find((plan) => plan.id === selectedPlan);
   const SelectedIcon = selectedService?.icon;
+
+  if (!ready || !account || !ownerId || account.id !== ownerId) {
+    return null;
+  }
 
   return (
     <>
@@ -243,6 +250,11 @@ export function PromotionPanel({ listingId }: { listingId: string }) {
                     paymentMethod,
                   });
                   closeModal();
+                  void showSweetAlert(
+                    "Xidmət aktivləşdirildi",
+                    "Ödəniş sistemi qoşulana qədər seçim avtomatik təsdiqləndi.",
+                    "success",
+                  );
                 }}
               >
                 <Check className="h-4 w-4" />

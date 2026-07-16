@@ -5,6 +5,7 @@ import {
   LatestListings,
   PremiumListings,
   StoreShowcase,
+  VipListings,
 } from "@/components/home/listing-sections";
 import { SiteShell } from "@/components/layout/site-shell";
 import { MotionSection } from "@/components/ui/motion-section";
@@ -22,6 +23,9 @@ export default function HomePage() {
       </MotionSection>
       <MotionSection>
         <PremiumListings />
+      </MotionSection>
+      <MotionSection>
+        <VipListings />
       </MotionSection>
       <MotionSection>
         <LatestListings />

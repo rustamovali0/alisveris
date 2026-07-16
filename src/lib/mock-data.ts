@@ -515,6 +515,7 @@ export const categoryTree: CategoryTreeNode[] = [
 export const listings: Listing[] = [
   {
     id: "lst-001",
+    listingNumber: "47078202",
     slug: "iphone-15-pro-max-256gb",
     title: "iPhone 15 Pro Max 256GB, Natural Titanium",
     price: 2190,
@@ -526,6 +527,7 @@ export const listings: Listing[] = [
     subcategory: "Apple",
     condition: "used",
     sellerType: "store",
+    sellerId: "usr-1",
     sellerName: "Rauf Məmmədov",
     storeName: "Telefon Dünyası",
     isPremium: true,
@@ -554,6 +556,7 @@ export const listings: Listing[] = [
   },
   {
     id: "lst-002",
+    listingNumber: "47078203",
     slug: "macbook-air-m3-13-16gb",
     title: "MacBook Air M3 13, 16GB RAM, 512GB SSD",
     price: 2450,
@@ -565,6 +568,7 @@ export const listings: Listing[] = [
     subcategory: "Noutbuklar",
     condition: "new",
     sellerType: "store",
+    sellerId: "usr-2",
     sellerName: "Nigar Əliyeva",
     storeName: "Tech Plaza",
     isPremium: true,
@@ -590,6 +594,7 @@ export const listings: Listing[] = [
   },
   {
     id: "lst-003",
+    listingNumber: "47078204",
     slug: "mercedes-c200-2018",
     title: "Mercedes-Benz C 200, 2018 il",
     price: 39800,
@@ -601,6 +606,7 @@ export const listings: Listing[] = [
     subcategory: "Avtomobillər",
     condition: "used",
     sellerType: "individual",
+    sellerId: "usr-3",
     sellerName: "Elvin Həsənli",
     isPremium: true,
     delivery: false,
@@ -626,6 +632,7 @@ export const listings: Listing[] = [
   },
   {
     id: "lst-004",
+    listingNumber: "47078205",
     slug: "yasamalda-3-otaqli-menzil",
     title: "Yasamalda yeni tikili 3 otaqlı mənzil",
     price: 226000,
@@ -637,6 +644,7 @@ export const listings: Listing[] = [
     subcategory: "Mənzillər",
     condition: "used",
     sellerType: "store",
+    sellerId: "usr-1",
     sellerName: "Samir Quliyev",
     storeName: "City Home",
     isPremium: false,
@@ -662,6 +670,7 @@ export const listings: Listing[] = [
   },
   {
     id: "lst-005",
+    listingNumber: "47078206",
     slug: "samsung-qled-55-smart-tv",
     title: "Samsung QLED 55 Smart TV",
     price: 980,
@@ -673,6 +682,7 @@ export const listings: Listing[] = [
     subcategory: "Televizorlar",
     condition: "used",
     sellerType: "individual",
+    sellerId: "usr-3",
     sellerName: "Aysel Rəhimova",
     isPremium: false,
     delivery: true,
@@ -695,6 +705,7 @@ export const listings: Listing[] = [
   },
   {
     id: "lst-006",
+    listingNumber: "47078207",
     slug: "ikea-divan-yataq-boz",
     title: "IKEA boz divan-yataq",
     price: 430,
@@ -706,6 +717,7 @@ export const listings: Listing[] = [
     subcategory: "Mebel",
     condition: "used",
     sellerType: "individual",
+    sellerId: "usr-2",
     sellerName: "Leyla Məlikova",
     isPremium: false,
     delivery: false,
@@ -728,6 +740,7 @@ export const listings: Listing[] = [
   },
   {
     id: "lst-007",
+    listingNumber: "47078208",
     slug: "playstation-5-slim-iki-oyun",
     title: "PlayStation 5 Slim, iki oyunla",
     price: 860,
@@ -739,6 +752,7 @@ export const listings: Listing[] = [
     subcategory: "Oyun konsolları",
     condition: "used",
     sellerType: "individual",
+    sellerId: "usr-1",
     sellerName: "Kamran Vəliyev",
     isPremium: true,
     delivery: true,
@@ -761,6 +775,7 @@ export const listings: Listing[] = [
   },
   {
     id: "lst-008",
+    listingNumber: "47078209",
     slug: "usaq-arabasi-premium",
     title: "Premium uşaq arabası, 3-ü 1-də",
     price: 520,
@@ -772,6 +787,7 @@ export const listings: Listing[] = [
     subcategory: "Uşaq arabaları",
     condition: "used",
     sellerType: "individual",
+    sellerId: "usr-3",
     sellerName: "Günel Abbasova",
     isPremium: false,
     delivery: true,

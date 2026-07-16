@@ -1,31 +1,58 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight, Grid3X3, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { categoryTree } from "@/lib/mock-data";
 
 export function CategoryMegaMenu() {
+  const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [activeRootId, setActiveRootId] = useState(categoryTree[0]?.id ?? "");
+  const [activeRootId, setActiveRootId] = useState("");
   const activeRoot = useMemo(
-    () => categoryTree.find((category) => category.id === activeRootId) ?? categoryTree[0],
+    () => categoryTree.find((category) => category.id === activeRootId),
     [activeRootId],
   );
-  const [activeChildId, setActiveChildId] = useState(activeRoot?.children?.[0]?.id ?? "");
+  const [activeChildId, setActiveChildId] = useState("");
   const activeChild = useMemo(() => {
-    return activeRoot?.children?.find((child) => child.id === activeChildId) ?? activeRoot?.children?.[0];
+    return activeRoot?.children?.find((child) => child.id === activeChildId);
   }, [activeChildId, activeRoot]);
 
+  useEffect(() => {
+    if (!open) {
+      setActiveRootId("");
+      setActiveChildId("");
+      return;
+    }
+
+    function closeOnOutside(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
   function selectRoot(id: string) {
-    const nextRoot = categoryTree.find((category) => category.id === id);
     setActiveRootId(id);
-    setActiveChildId(nextRoot?.children?.[0]?.id ?? "");
+    setActiveChildId("");
   }
 
+  const columnCount = activeChild?.children?.length ? 3 : activeRoot?.children?.length ? 2 : 1;
+
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       <Button
         aria-expanded={open}
         aria-label="Kateqoriyalar kataloqu"
@@ -49,7 +76,10 @@ export function CategoryMegaMenu() {
               <X className="h-5 w-5" />
             </Button>
           </div>
-          <div className="grid max-h-[620px] grid-cols-3 overflow-hidden">
+          <div
+            className="grid max-h-[min(620px,calc(100vh-170px))] overflow-hidden"
+            style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+          >
             <div className="overflow-y-auto border-r border-border p-3">
               {categoryTree.map((category) => (
                 <button
@@ -68,7 +98,8 @@ export function CategoryMegaMenu() {
                 </button>
               ))}
             </div>
-            <div className="overflow-y-auto border-r border-border p-3">
+            {activeRoot?.children?.length ? (
+            <div className={`${activeChild?.children?.length ? "border-r" : ""} overflow-y-auto border-border p-3`}>
               {activeRoot?.children?.map((child) => (
                 <Link
                   className={`flex items-center justify-between rounded-lg px-3 py-3 text-sm font-semibold ${
@@ -86,6 +117,8 @@ export function CategoryMegaMenu() {
                 </Link>
               ))}
             </div>
+            ) : null}
+            {activeChild?.children?.length ? (
             <div className="overflow-y-auto p-3">
               {activeChild?.children?.length ? (
                 activeChild.children.map((grandChild) => (
@@ -98,12 +131,9 @@ export function CategoryMegaMenu() {
                     {grandChild.name}
                   </Link>
                 ))
-              ) : (
-                <div className="rounded-lg bg-background p-4 text-sm text-muted">
-                  Bu alt kateqoriyanın əlavə səviyyəsi yoxdur.
-                </div>
-              )}
+              ) : null}
             </div>
+            ) : null}
           </div>
         </div>
       ) : null}

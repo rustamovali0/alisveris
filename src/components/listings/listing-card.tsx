@@ -58,6 +58,7 @@ export function ListingCard({ listing, compact = false }: ListingCardProps) {
           <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5">
             {listing.title}
           </h3>
+          <p className="text-[11px] font-semibold text-muted">Elan № {listing.listingNumber}</p>
           {!compact ? (
             <div className="flex flex-wrap gap-1.5 text-xs text-muted">
               <span className="inline-flex items-center gap-1">
