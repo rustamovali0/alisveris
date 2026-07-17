@@ -145,31 +145,48 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     window.dispatchEvent(new Event(accountChangedEvent));
   }
 
-  async function register(input: {
-    name: string;
-    email: string;
-    password: string;
-    accountType: AccountType;
-  }) {
-const userId = window.crypto.randomUUID();
-    if (!isSupabaseConfigured && process.env.NODE_ENV === "production") {
-      throw new Error(
-        "Qeydiyyat xidməti düzgün qoşulmayıb. Supabase layihə ünvanını yoxlayın.",
-      );
-    }
-
-    // Qeydiyyatda email göndərmə limiti istifadəçini bloklamasın deyə hesabı lokal sessiyada yaradırıq.
-    // Real auth girişi login mərhələsində Supabase ilə işləyir.
-
-    const profile: AccountProfile = {
-      id: userId,
-      name: input.name.trim(),
-      accountType: input.accountType,
-    };
-    saveProfile(profile);
-    activate(profile);
-    return profile;
+async function register(input: {
+  name: string;
+  email: string;
+  password: string;
+  accountType: AccountType;
+}) {
+  if (!isSupabaseConfigured) {
+    throw new Error("Supabase düzgün qoşulmayıb.");
   }
+
+  const supabase = createSupabaseBrowserClient();
+
+  const { data, error } = await supabase.auth.signUp({
+    email: input.email.trim().toLowerCase(),
+    password: input.password,
+    options: {
+      data: {
+        full_name: input.name.trim(),
+        account_type: input.accountType,
+      },
+    },
+  });
+
+  if (error || !data.user) {
+    throw new Error(
+      error
+        ? translateAuthError(error, "Qeydiyyat mümkün olmadı.")
+        : "Qeydiyyat mümkün olmadı."
+    );
+  }
+
+  const profile: AccountProfile = {
+    id: data.user.id,
+    name: input.name.trim(),
+    accountType: input.accountType,
+  };
+
+  saveProfile(profile);
+  activate(profile);
+
+  return profile;
+}
 
   async function login(input: { email: string; password: string }) {
     const email = input.email.trim().toLowerCase();
