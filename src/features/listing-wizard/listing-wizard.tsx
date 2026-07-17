@@ -265,33 +265,42 @@ export function ListingWizard() {
         uploaded.push({ url: data.publicUrl, path, isPrimary: image.isPrimary });
       }
 
-      const slug = `${slugify(parsed.data.title)}-${crypto.randomUUID().slice(0, 8)}`;
-      const { data: listing, error: listingError } = await supabase
-        .from("listings")
-        .insert({
-          seller_id: account.id,
-          store_id: storeId,
-          category_id: categoryQuery.data.id,
-          location_id: null,
-          title: parsed.data.title.trim(),
-          slug,
-          description: parsed.data.description.trim(),
-          price: parsed.data.price,
-          currency: "AZN",
-          condition: parsed.data.condition,
-          status: "pending",
-          is_premium: parsed.data.package === "premium",
-          is_vip: parsed.data.package === "vip",
-          delivery_available: parsed.data.delivery,
-          phone: parsed.data.phone.trim(),
-          whatsapp: parsed.data.whatsapp?.trim() || null,
-          address: [parsed.data.city, parsed.data.district, parsed.data.address]
-            .filter(Boolean)
-            .join(", "),
-          created_by: account.id,
-        })
-        .select("id")
-        .single();
+ const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  throw new Error("İstifadəçi daxil olmayıb. Zəhmət olmasa yenidən giriş edin.");
+}
+
+const slug = `${slugify(parsed.data.title)}-${crypto.randomUUID().slice(0, 8)}`;
+
+const { data: listing, error: listingError } = await supabase
+  .from("listings")
+  .insert({
+    seller_id: user.id,
+    store_id: storeId,
+    category_id: categoryQuery.data.id,
+    location_id: null,
+    title: parsed.data.title.trim(),
+    slug,
+    description: parsed.data.description.trim(),
+    price: parsed.data.price,
+    currency: "AZN",
+    condition: parsed.data.condition,
+    status: "pending",
+    is_premium: parsed.data.package === "premium",
+    is_vip: parsed.data.package === "vip",
+    delivery_available: parsed.data.delivery,
+    phone: parsed.data.phone.trim(),
+    whatsapp: parsed.data.whatsapp?.trim() || null,
+    address: [parsed.data.city, parsed.data.district, parsed.data.address]
+      .filter(Boolean)
+      .join(", "),
+    created_by: user.id,
+  })
+  .select("id")
+  .single();
 
       if (listingError || !listing) throw listingError ?? new Error("Elan yaradıla bilmədi.");
 
