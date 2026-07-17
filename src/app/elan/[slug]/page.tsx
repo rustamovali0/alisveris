@@ -11,7 +11,6 @@ import {
   Truck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContactActions, MobileContactBar } from "@/components/listings/contact-actions";
 import { ListingGallery } from "@/components/listings/listing-gallery";
