@@ -2,11 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  AlertTriangle,
   BarChart3,
   Calendar,
   ChevronRight,
-  Heart,
   MapPin,
   ShieldCheck,
   Star,
@@ -19,6 +17,7 @@ import { ContactActions, MobileContactBar } from "@/components/listings/contact-
 import { ListingGallery } from "@/components/listings/listing-gallery";
 import { ListingCard } from "@/components/listings/listing-card";
 import { ListingLiveStats } from "@/components/listings/listing-live-stats";
+import { ListingSideActions } from "@/components/listings/listing-side-actions";
 import { PromotionPanel } from "@/components/listings/promotion-panel";
 import { SiteShell } from "@/components/layout/site-shell";
 import { listings, sellerRatingSummary } from "@/lib/mock-data";
@@ -153,6 +152,28 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
               </div>
             </Card>
 
+            <Card className="p-5 lg:hidden">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted">Satıcı</p>
+                  <h2 className="text-xl font-black">{listing.storeName ?? listing.sellerName}</h2>
+                  <p className="mt-1 text-sm text-muted">{listing.sellerName}</p>
+                </div>
+                {listing.sellerType === "store" ? (
+                  <Badge tone="green">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Təsdiqli
+                  </Badge>
+                ) : null}
+              </div>
+              <ContactActions
+                listingId={listing.id}
+                phone={listing.phone}
+                whatsapp={listing.whatsapp}
+              />
+              <ListingSideActions listingId={listing.id} />
+            </Card>
+
             <Card className="p-5">
               <h2 className="text-xl font-black">Xəritə və ünvan</h2>
               <p className="mt-2 text-sm text-muted">
@@ -209,7 +230,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
             ) : null}
           </section>
 
-          <aside className="space-y-4">
+          <aside className="hidden space-y-4 lg:block">
             <Card className="p-5 lg:sticky lg:top-24">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
@@ -252,16 +273,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 phone={listing.phone}
                 whatsapp={listing.whatsapp}
               />
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button type="button" variant="ghost">
-                  <Heart className="h-4 w-4" />
-                  Seçilmiş
-                </Button>
-                <Button type="button" variant="ghost">
-                  <AlertTriangle className="h-4 w-4" />
-                  Şikayət et
-                </Button>
-              </div>
+              <ListingSideActions listingId={listing.id} />
             </Card>
             <PromotionPanel listingId={listing.id} ownerId={listing.sellerId} />
           </aside>

@@ -43,7 +43,6 @@ type AccountContextValue = {
   login: (input: {
     email: string;
     password: string;
-    accountType: AccountType;
   }) => Promise<AccountProfile>;
   saveStore: (store: StoreProfile) => Promise<void>;
   logout: () => void;
@@ -54,6 +53,45 @@ export const accountSessionKey = "alisveris-account-session-v1";
 const accountChangedEvent = "alisveris-account-changed";
 
 const AccountContext = createContext<AccountContextValue | null>(null);
+
+function translateAuthError(error: unknown, fallback: string) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+  const normalized = message.toLowerCase();
+
+  if (error instanceof TypeError || normalized.includes("failed to fetch") || normalized.includes("network")) {
+    return "Xidmətə qoşulmaq mümkün olmadı. İnternet və Supabase ayarlarını yoxlayın.";
+  }
+  if (
+    normalized.includes("rate") ||
+    normalized.includes("limit") ||
+    normalized.includes("too many") ||
+    normalized.includes("email rate")
+  ) {
+    return "E-poçt göndərmə limiti dolub. Bir neçə dəqiqə sonra yenidən cəhd edin.";
+  }
+  if (normalized.includes("already") || normalized.includes("registered")) {
+    return "Bu e-poçtla hesab artıq mövcuddur.";
+  }
+  if (normalized.includes("invalid login") || normalized.includes("invalid credentials")) {
+    return "E-poçt və ya şifrə düzgün deyil.";
+  }
+  if (normalized.includes("email not confirmed")) {
+    return "E-poçt təsdiqlənməyib.";
+  }
+  if (normalized.includes("password") || normalized.includes("weak")) {
+    return "Şifrə ən azı 6 simvol olmalıdır.";
+  }
+  if (normalized.includes("database") || normalized.includes("profile") || normalized.includes("foreign key")) {
+    return "Hesab yaradıldı, profil məlumatları tamamlanmadı. Admin SQL qurulumunu yoxlayın.";
+  }
+
+  return fallback;
+}
 
 function readProfiles(): AccountProfile[] {
   try {
@@ -122,27 +160,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       );
     }
 
-    if (isSupabaseConfigured) {
-      try {
-        const supabase = createSupabaseBrowserClient();
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password: input.password,
-          options: {
-            data: { full_name: input.name.trim(), account_type: input.accountType },
-          },
-        });
-        if (error) throw new Error(error.message);
-        if (data.user) userId = data.user.id;
-      } catch (registerError) {
-        if (registerError instanceof TypeError) {
-          throw new Error(
-            "Qeydiyyat xidmətinə qoşulmaq mümkün olmadı. Supabase ünvanını yoxlayın.",
-          );
-        }
-        throw registerError;
-      }
-    }
+    // Qeydiyyatda email göndərmə limiti istifadəçini bloklamasın deyə hesabı lokal sessiyada yaradırıq.
+    // Real auth girişi login mərhələsində Supabase ilə işləyir.
 
     const profile: AccountProfile = {
       id: userId,
@@ -154,11 +173,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     return profile;
   }
 
-  async function login(input: {
-    email: string;
-    password: string;
-    accountType: AccountType;
-  }) {
+  async function login(input: { email: string; password: string }) {
     const email = input.email.trim().toLowerCase();
     const lockedMessage = loginLockMessage("user", email);
     if (lockedMessage) throw new Error(lockedMessage);
@@ -171,7 +186,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       email,
       password: input.password,
     });
-    if (error || !data.user) throw new Error(registerFailedLogin("user", email));
+    if (error || !data.user) {
+      const failedMessage = registerFailedLogin("user", email);
+      if (failedMessage.includes("bloklanıb")) throw new Error(failedMessage);
+      throw new Error(error ? translateAuthError(error, "Məlumatlar düzgün deyil.") : "Məlumatlar düzgün deyil.");
+    }
 
     const { data: profileRow } = await supabase
       .from("profiles")
@@ -186,15 +205,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const storedType = (profileRow?.account_type ?? data.user.user_metadata.account_type) as
       | AccountType
       | undefined;
-    if (!storedType || storedType !== input.accountType) {
-      await supabase.auth.signOut();
-      throw new Error(registerFailedLogin("user", email));
-    }
     clearFailedLogins("user", email);
     const profile: AccountProfile = {
       id: data.user.id,
       name: profileRow?.full_name ?? data.user.user_metadata.full_name ?? "İstifadəçi",
-      accountType: storedType,
+      accountType: storedType ?? "individual",
       store: storeRow
         ? { name: storeRow.name, logoUrl: storeRow.logo_url ?? "" }
         : undefined,

@@ -27,7 +27,7 @@ export function AuthPanel({ initialMode }: { initialMode: "login" | "register" }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    if (!accountType) {
+    if (mode === "register" && !accountType) {
       setError("Fərdi və ya Mağaza hesabını seçin.");
       return;
     }
@@ -44,8 +44,8 @@ export function AuthPanel({ initialMode }: { initialMode: "login" | "register" }
     try {
       const profile =
         mode === "register"
-          ? await register({ name, email, password, accountType })
-          : await login({ email, password, accountType });
+          ? await register({ name, email, password, accountType: accountType ?? "individual" })
+          : await login({ email, password });
       router.push(profile.accountType === "store" && !profile.store ? "/magaza-yarat" : "/profil");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Əməliyyat tamamlanmadı.");
@@ -80,34 +80,38 @@ export function AuthPanel({ initialMode }: { initialMode: "login" | "register" }
           <h1 className="text-2xl font-black">
             {mode === "login" ? "Hesabınıza daxil olun" : "Yeni hesab yaradın"}
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            Hesab tipi yalnız bir dəfə seçilir. Sonradan yalnız admin dəyişə bilər.
-          </p>
+          {mode === "register" ? (
+            <p className="mt-1 text-sm text-muted">
+              Hesab tipi yalnız bir dəfə seçilir. Sonradan yalnız admin dəyişə bilər.
+            </p>
+          ) : null}
         </div>
 
-        <div className="mb-5 grid grid-cols-2 gap-3" role="group" aria-label="Hesab tipi">
-          {([
-            ["individual", "Fərdi", UserRound, "Şəxsi elanlar üçün"],
-            ["store", "Mağaza", Store, "Vitrin və məhsullar üçün"],
-          ] as const).map(([type, label, Icon, description]) => (
-            <button
-              aria-pressed={accountType === type}
-              className={cn(
-                "min-h-28 rounded-lg border p-4 text-left transition hover:border-primary/50",
-                accountType === type
-                  ? "border-primary bg-primary-soft text-primary-dark"
-                  : "border-border bg-card",
-              )}
-              key={type}
-              type="button"
-              onClick={() => setAccountType(type)}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="mt-3 block font-black">{label}</span>
-              <span className="mt-1 block text-xs text-muted">{description}</span>
-            </button>
-          ))}
-        </div>
+        {mode === "register" ? (
+          <div className="mb-5 grid grid-cols-2 gap-3" role="group" aria-label="Hesab tipi">
+            {([
+              ["individual", "Fərdi", UserRound, "Şəxsi elanlar üçün"],
+              ["store", "Mağaza", Store, "Vitrin və məhsullar üçün"],
+            ] as const).map(([type, label, Icon, description]) => (
+              <button
+                aria-pressed={accountType === type}
+                className={cn(
+                  "min-h-28 rounded-lg border p-4 text-left transition hover:border-primary/50",
+                  accountType === type
+                    ? "border-primary bg-primary-soft text-primary-dark"
+                    : "border-border bg-card",
+                )}
+                key={type}
+                type="button"
+                onClick={() => setAccountType(type)}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="mt-3 block font-black">{label}</span>
+                <span className="mt-1 block text-xs text-muted">{description}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <form className="grid gap-4" onSubmit={submit}>
           {mode === "register" ? (
