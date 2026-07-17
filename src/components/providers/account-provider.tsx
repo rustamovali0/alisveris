@@ -151,9 +151,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     password: string;
     accountType: AccountType;
   }) {
-    const email = input.email.trim().toLowerCase();
-    let userId = window.crypto.randomUUID();
-
+const userId = window.crypto.randomUUID();
     if (!isSupabaseConfigured && process.env.NODE_ENV === "production") {
       throw new Error(
         "Qeydiyyat xidməti düzgün qoşulmayıb. Supabase layihə ünvanını yoxlayın.",
